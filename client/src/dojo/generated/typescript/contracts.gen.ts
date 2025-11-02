@@ -17,7 +17,7 @@ export function setupWorld(provider: DojoProvider) {
 			return await provider.execute(
 				snAccount,
 				build_actions_newGame_calldata(),
-				"tobie",
+				"tomie1",
 			);
 		} catch (error) {
 			console.error(error);
@@ -38,7 +38,7 @@ export function setupWorld(provider: DojoProvider) {
 			return await provider.execute(
 				snAccount,
 				build_actions_play_calldata(),
-				"tobie",
+				"tomie1",
 			);
 		} catch (error) {
 			console.error(error);

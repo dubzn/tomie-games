@@ -6,11 +6,8 @@ import HomeScreen from './components/Home'
 import GameScreen from './components/Game'
 import { useActions } from './hooks/useActions'
 import { AudioProvider } from './hooks/useAudio'
-
-// Re-export useAudio hook for convenience
 export { useAudio } from './hooks/useAudio'
 
-// Componente para la pantalla de inicio - conecta wallet y navega a levels
 function Home() {
   const navigate = useNavigate()
   const { account, address, status } = useAccount()
@@ -20,23 +17,22 @@ function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
  
-  const isConnected = !!account && status === 'isConnected'
+  const connected = !!account && status === 'connected'
 
   useEffect(() => {
-  }, [account, address, status, isisConnected, connectors.length])
-
-  // Log y redirección cuando la wallet se conecta
-  useEffect(() => {
-    if (isisConnected && account && address) {
-      navigate('/levels')
+    if (connected && account && address) {
+      const timer = setTimeout(() => {
+        navigate('/game')
+      }, 1000)
+      return () => clearTimeout(timer)
     }
-  }, [isisConnected, account, address, status, navigate])
+  }, [connected, account, address, status, navigate])
 
   // Combinar errores de acciones y locales
   const displayError = error || actionError
 
   const newGameCall = async () => {
-    if (!isisConnected) {
+    if (!connected) {
       if (connectors.length > 0) {
         try {
           setLoading(true)
@@ -63,7 +59,7 @@ function Home() {
       }
       
     } catch (err) {
-      console.error('❌ Error creating new game:', err)
+      console.error('Error creating new game:', err)
       setError(err instanceof Error ? err.message : 'Failed to create new game')
     } finally {
       setLoading(false)
@@ -79,33 +75,10 @@ function Home() {
         </div>
       )}
       
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '12px',
-          zIndex: 9999
-        }}>
-          <div>Wallet: {isConnected ? '✅ isConnected' : '❌ Not isConnected'}</div>
-          <div>Status: {status}</div>
-          {isisConnected && connectors.length > 0 && (
-            <div>Wallet Name: {connectors[0].name || connectors[0].id || 'Unknown'}</div>
-          )}
-          {address && !isConnected && (
-            <div>Address: {address.slice(0, 6)}...{address.slice(-4)}</div>
-          )}
-        </div>
-      )}
-      
       <HomeScreen 
         newGame={newGameCall}
         loading={loading || actionLoading}
-        isConnected={isConnected}
+        connected={connected}
       />
     </>
   )
@@ -117,7 +90,7 @@ function App() {
       <div className="app-container">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/game/:gameId" element={<GameScreen />} />
+          <Route path="/game" element={<GameScreen />} />
         </Routes>
       </div>
     </AudioProvider>

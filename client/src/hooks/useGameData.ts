@@ -29,7 +29,7 @@ export const useGameData = (gameId?: number) => {
     try {
       const battleQuery = `
         query GetGame($gameId: Int!) {
-          tobieGamesGameModels(where: { id: $gameId }) {
+          tomie1GamesGameModels(where: { id: $gameId }) {
             edges {
               node {
                 id
@@ -66,8 +66,8 @@ export const useGameData = (gameId?: number) => {
         throw new Error(`GraphQL game error: ${gameResult.errors[0]?.message || 'Unknown error'}`);
       }
       
-      if (gameResult.data?.tobieGamesGameModels?.edges?.length > 0) {
-        const gameNode = gameResult.data.tobieGamesGameModels.edges[0].node;
+      if (gameResult.data?.tomie1GamesGameModels?.edges?.length > 0) {
+        const gameNode = gameResult.data.tomie1GamesGameModels.edges[0].node;
         
         gameData = {
           id: toNumber(gameNode.id),

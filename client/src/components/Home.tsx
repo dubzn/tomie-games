@@ -10,26 +10,48 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ 
   newGame, 
   loading = false,
-  isConnected = false
+  connected = false
 }) => {
   return (
     <div className="home">
-      
+      {/* Borde izquierdo - scroll de arriba hacia abajo */}
+      <div className="scroll-edge scroll-edge-left">
+        <div className="scroll-content scroll-content-left">
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+        </div>
+      </div>
+
+      {/* Borde derecho - scroll de abajo hacia arriba */}
+      <div className="scroll-edge scroll-edge-right">
+        <div className="scroll-content scroll-content-right">
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+          <img src="/backgrounds/roll_1.png" alt="" />
+        </div>
+      </div>
+
       <h1 className="title-banner">
-        <span className="titulo-text">Tobie Games</span>
+        <span className="titulo-text">Tomie Games</span>
       </h1>
       
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: '24px'
-      }}>
+      <div className="home-menu-container">
         {loading ? (
-          <div className="press-start"></div>
+          <div className="menu-text"></div>
         ) : (
-          <div className="press-start" onClick={newGame}>
-            {isConnected ? 'PRESS START' : 'CONNECT BY CONTROLLER'}
+          <div className="menu-text" onClick={newGame}>
+            {connected ? 'REDIRECTING..' : 'LOGIN WITH CONTROLLER'}
           </div>
         )}
       </div>

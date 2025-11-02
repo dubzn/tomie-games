@@ -10,7 +10,7 @@ import { WalletSessionManager } from "../components/WalletSessionManager";
 
 const actions_contract = getContractByName(
   dojoConfig.manifest,
-  dojoConfig.manifest.world.name,
+  "tomie1",
   "actions"
 );
 
@@ -21,10 +21,10 @@ const policies: SessionPolicies = {
         {
           name: "new_game",
           entrypoint: "new_game",
-          description: "Start a new game",
+          description: "Start a new battle",
         },
         { 
-          name: "play",   
+          name: "play", 
           entrypoint: "play",
           description: "Play a turn in the game"
         },
@@ -36,23 +36,23 @@ const policies: SessionPolicies = {
 const controller = new ControllerConnector({
   chains: [
     {
-      rpcUrl: dojoConfig.rpcUrl,
+      rpcUrl: import.meta.env.VITE_RPC_URL || "http://localhost:5050",
     },
   ],
-  defaultChainId: shortString.encodeShortString("WP_TOMIE_GAMES"),
+  defaultChainId: shortString.encodeShortString("WP_TOMIE1"),
   policies,
 });
 
 const slot: Chain = {
-  id: num.toBigInt(shortString.encodeShortString("WP_TOMIE_GAMES")),
-  name: "Tomie Games",
-  network: "tomie-games",
+  id: num.toBigInt(shortString.encodeShortString("WP_TOMIE1")),
+  name: "Tomie",
+  network: "tomie1",
   rpcUrls: {
-    default: {  
-      http: [dojoConfig.rpcUrl],
+    default: {
+      http: [import.meta.env.VITE_RPC_URL],
     },
     public: {
-      http: [dojoConfig.rpcUrl],
+      http: [import.meta.env.VITE_RPC_URL],
     },
   },  
   nativeCurrency: {

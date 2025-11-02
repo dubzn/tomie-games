@@ -1,26 +1,24 @@
 [package]
-name = "dojo_starter"
-version = "1.8.0"
+cairo-version = "=2.12.2"
+name = "tomie1"
+version = "1.0.0"
 edition = "2024_07"
 
 [cairo]
 sierra-replace-ids = true
 
 [scripts]
+build = "clear; scarb fmt; sozo build"
 migrate = "sozo build && sozo migrate"
-spawn = "sozo execute dojo_starter-actions spawn --wait"
-move = "sozo execute dojo_starter-actions move -c 1 --wait"
 
 [dependencies]
-dojo = "1.8.0"
-starknet = "2.13.1"
+dojo = "1.7.0"
+dojo_cairo_macros = "1.7.0"
+starknet = "2.12.2"
 
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]
 
-[tool.scarb]
-allow-prebuilt-plugins = ["dojo_cairo_macros"]
-
-[dev-dependencies]
-cairo_test = "2.12.2"
-dojo_cairo_test = "1.8.0"
+[profile.slot]
+account_address = "0x6677fe62ee39c7b07401f754138502bab7fac99d2d3c5d37df7d1c6fab10819"
+private_key = "0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4"
