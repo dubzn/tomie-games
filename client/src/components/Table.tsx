@@ -183,7 +183,7 @@ export default function TableScreen() {
           setIsTextComplete(true);
           // Calcular tiempo de espera basado en la duración del audio o velocidad usada
           const estimatedDuration = calculatedIntervalMs * currentDialogue.length;
-          const waitTime = estimatedDuration > 0 ? estimatedDuration + 500 : 2000;
+          const waitTime = estimatedDuration > 0 ? estimatedDuration + 250 : 1000;
           
           timeoutRef.current = setTimeout(() => {
             if (currentDialogueIndex < introDialogues.length - 1) {
@@ -263,7 +263,7 @@ export default function TableScreen() {
             setGamePhase('choices');
             setShowChoices(true);
           }
-        }, 2000);
+        }, 1000);
       } else {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (currentDialogueIndex < introDialogues.length - 1) {
@@ -309,7 +309,7 @@ export default function TableScreen() {
         } else {
           setCurrentResultDialogueIndex(prev => prev + 1);
         }
-      }, 2000);
+      }, 1000);
     } else if (isResultTextComplete) {
       if (resultDialogueTimeoutRef.current) clearTimeout(resultDialogueTimeoutRef.current);
       if (currentResultDialogueIndex < resultDialogues.length - 1) {
@@ -339,7 +339,7 @@ export default function TableScreen() {
             navigate(playerWon ? '/victory' : '/defeat');
           }, 2000);
         }
-      }, 2000);
+      }, 1000);
     } else if (isGameEndTextComplete) {
       if (gameEndDialogueTimeoutRef.current) clearTimeout(gameEndDialogueTimeoutRef.current);
       if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
@@ -600,7 +600,7 @@ export default function TableScreen() {
                   } else {
                     setCurrentResultDialogueIndex(prev => prev + 1);
                   }
-                }, (duration * 1000) + 500);
+                }, (duration * 1000) + 250);
               }
             }, intervalMs);
           } else {
@@ -621,7 +621,7 @@ export default function TableScreen() {
                   } else {
                     setCurrentResultDialogueIndex(prev => prev + 1);
                   }
-                }, 2000);
+                }, 1000);
               }
             }, 50);
           }
@@ -643,7 +643,7 @@ export default function TableScreen() {
                 } else {
                   setCurrentResultDialogueIndex(prev => prev + 1);
                 }
-              }, 2000);
+              }, 1000);
             }
           }, 50);
         });
@@ -716,9 +716,9 @@ export default function TableScreen() {
                   setIsFadingOut(true);
                   setTimeout(() => {
                     navigate(playerWon ? '/victory' : '/defeat');
-                  }, 2000);
+                  }, 1000);
                 }
-              }, (duration * 1000) + 500);
+              }, (duration * 1000) + 250);
             }
           }, intervalMs);
         } else {
@@ -737,9 +737,9 @@ export default function TableScreen() {
                   setIsFadingOut(true);
                   setTimeout(() => {
                     navigate(playerWon ? '/victory' : '/defeat');
-                  }, 2000);
+                  }, 1000);
                 }
-              }, 3000);
+              }, 1500);
             }
           }, 50);
         }
@@ -759,7 +759,7 @@ export default function TableScreen() {
                 setIsFadingOut(true);
                 setTimeout(() => {
                   navigate(playerWon ? '/victory' : '/defeat');
-                }, 2000);
+                }, 1000);
               }
             }, 3000);
           }
@@ -781,7 +781,7 @@ export default function TableScreen() {
               setIsFadingOut(true);
               setTimeout(() => {
                 navigate(playerWon ? '/victory' : '/defeat');
-              }, 2000);
+              }, 1000);
             }
           }, 3000);
         }

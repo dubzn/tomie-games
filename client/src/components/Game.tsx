@@ -29,7 +29,7 @@ export default function GameScreen() {
   useEffect(() => {
     const buttonTimer = setTimeout(() => {
       setShowButton(true);
-    }, 2500);
+    }, 3500);
 
     return () => clearTimeout(buttonTimer);
   }, []);
