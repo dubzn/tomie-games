@@ -9,7 +9,7 @@ pub mod actions {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use starknet::get_caller_address;
-    use crate::models::*;
+    use crate::models::{TotalGames, Game, CurrentGame, TomieExpressionEvent, YanKenPonResultEvent, GameStartedEvent, GameEndedEvent};
     use crate::random::{Random, RandomTrait};
 
     fn dojo_init(self: @ContractState) {}
@@ -46,6 +46,14 @@ pub mod actions {
                 );
 
             world.write_model(@CurrentGame { player_address: get_caller_address(), game_id: 0 });
+
+            world.emit_event(@GameStartedEvent {
+                game_id: total_games.total_games + 1,
+                player: get_caller_address(),
+                lives: 3,
+                tomie_lives: 3,
+                current_minigame: YANKENPON_ID,
+            });
         }
 
         fn play(ref self: ContractState, game_id: u32, choice: u8) {
@@ -58,7 +66,7 @@ pub mod actions {
                 if game.in_progress {
                     world
                         .emit_event(
-                            @YanKenPonResult {
+                            @YanKenPonResultEvent {
                                 game_id: game_id,
                                 player_choice: choice,
                                 tomie_choice: tomie_choice,
@@ -69,14 +77,14 @@ pub mod actions {
                     if result == PLAYER_WINS {
                         game.lives -= 1;
                         if random.between(0, 100) < 50 {
-                            world.emit_event(@TomieExpression {
+                            world.emit_event(@TomieExpressionEvent {
                                 game_id: game_id,
                                 expression_id: 2,
                             });
                         }
                     } else if result == TOMIE_WINS {
                         if random.between(0, 100) < 50 {
-                            world.emit_event(@TomieExpression {
+                            world.emit_event(@TomieExpressionEvent {
                                 game_id: game_id,
                                 expression_id: 1,
                             });
@@ -88,7 +96,7 @@ pub mod actions {
                         game.in_progress = false;
                         world
                             .emit_event(
-                                @GameEnded {
+                                @GameEndedEvent {
                                     game_id: game_id, player: game.player, player_won: false,
                                 },
                             );
@@ -96,7 +104,7 @@ pub mod actions {
                         game.in_progress = false;
                         world
                             .emit_event(
-                                @GameEnded {
+                                @GameEndedEvent {
                                     game_id: game_id, player: game.player, player_won: true,
                                 },
                             );
@@ -121,7 +129,7 @@ pub mod actions {
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
-            self.world(@"tomie1")
+            self.world(@"tomie3")
         }
     }
 

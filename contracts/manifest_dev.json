@@ -1,9 +1,9 @@
 {
   "world": {
     "class_hash": "0x691da17eb9ef169b385eaaf3a303972d187479e30be146d3337423eaec6272d",
-    "address": "0x2de755143c2e0cbb962beec1009a5010fc09a1399fee0025645ad40bf4a5e3a",
-    "seed": "tomie1",
-    "name": "tomie1",
+    "address": "0x50670fa33cddda5de9840acc350d820a267f87b320f593b6322e5bc574dc391",
+    "seed": "tomie3",
+    "name": "Tomie Games",
     "entrypoints": [
       "uuid",
       "set_metadata",
@@ -1490,8 +1490,8 @@
   },
   "contracts": [
     {
-      "address": "0x1738883c1e5ab1a0ddbcfc4e60571a1b2060c0aaf3370914bbc9fffe9e4bfcb",
-      "class_hash": "0x2349998a525e0d494e801eec8cb6928b327d867dfb87213ec8802edcae7dac2",
+      "address": "0x2fa65f814e2be12b108a31c9cb36e43bbea54e998f4a3d1d44ecb66d6de3bae",
+      "class_hash": "0x57c99ee152d61992111f6bcbef4d2a74739e13a06e9b0bbf5d80fe9b29d2ac4",
       "abi": [
         {
           "type": "impl",
@@ -1553,11 +1553,11 @@
         {
           "type": "impl",
           "name": "ActionsImpl",
-          "interface_name": "tomie1::systems::actions::IActions"
+          "interface_name": "tomie3::systems::actions::IActions"
         },
         {
           "type": "interface",
-          "name": "tomie1::systems::actions::IActions",
+          "name": "tomie3::systems::actions::IActions",
           "items": [
             {
               "type": "function",
@@ -1676,7 +1676,7 @@
         },
         {
           "type": "event",
-          "name": "tomie1::systems::actions::actions::Event",
+          "name": "tomie3::systems::actions::actions::Event",
           "kind": "enum",
           "variants": [
             {
@@ -1693,8 +1693,8 @@
         }
       ],
       "init_calldata": [],
-      "tag": "tomie1-actions",
-      "selector": "0x35673be91664d23312e0086b05832b723d513352c53fba7701fc063923c591c",
+      "tag": "tomie3-actions",
+      "selector": "0x4ca0a27f2ebf4e7936f70e50c719076d3643550e235bd63c0e774e444a9312c",
       "systems": [
         "new_game",
         "play",
@@ -1706,53 +1706,53 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x1fb96a313e224ec3890cb0e561839d02d0c2c68b81c589c3c4272e5adee31d0",
-      "tag": "tomie1-CurrentGame",
-      "selector": "0x69f60dbe2dc3e48e112cc3968e984de8e3824f6010a0185bc949662343d0eeb"
+      "class_hash": "0x65fedd825ce397bd57d694ae63cc0637f6e8979282c5ef419c4ce41b71f5408",
+      "tag": "tomie3-CurrentGame",
+      "selector": "0x2963475c32c78584e8a71887d64cf1984a9ee7ba6e8c9d034c787040f0d5cce"
     },
     {
       "members": [],
-      "class_hash": "0x2c53157364c8683e37480f71818afd9e49362f99479eb14c56192a1d88b4881",
-      "tag": "tomie1-Game",
-      "selector": "0x5dc23b5329dda94690f91e028f99c7089f35b6f20043df263b5cd71704b781f"
+      "class_hash": "0x23fad44de9467ced3de522b424a3fbf94c1bc7c486e6576b8d5fd9c58f1adb3",
+      "tag": "tomie3-Game",
+      "selector": "0x51217823a3bbaf835c4ffc43f649a5fac15535d39ed0f8faafe079a6ef2863"
     },
     {
       "members": [],
-      "class_hash": "0x4b1e791d96e01d9595feb2a8075bfaaa64d574822616a881d9c2d6eff7d651a",
-      "tag": "tomie1-TotalGames",
-      "selector": "0x40c8118e910cc5853ce2f5ff0bd871d8bd55eab8c842007e95e371e058b8b41"
+      "class_hash": "0x53640c6780bffbb2cd723d53a1b230ac822d34856faab764cc3df7dea53be57",
+      "tag": "tomie3-TotalGames",
+      "selector": "0x3dc9334574aaef08ffc2ef7332d5c41dacdada9320899db2be2ecd33ee602e"
     }
   ],
   "events": [
     {
       "members": [],
-      "class_hash": "0x404a1b1fb7950fffcdab16ef60c37295d4840850c624fd99b0babe08ee2ede4",
-      "tag": "tomie1-DiceResult",
-      "selector": "0x6392f5e3bdf6f0e4a4ac1e2f2fb5cfc1f99e958449ec0d2bcd02ee60f5d58b2"
+      "class_hash": "0x161e24a8315f3cec4e282f608bc2261aff42a00f74359938b2f5fb88b277f2e",
+      "tag": "tomie3-DiceResultEvent",
+      "selector": "0x54bc8813cabbe57d845ebea50c99d0615338d13c7cc3ce31bc619b957342792"
     },
     {
       "members": [],
-      "class_hash": "0x483bfccf95191b1d5d8f421f7eac24f1ca1a0584e580225e02d5d3559ab5718",
-      "tag": "tomie1-GameEnded",
-      "selector": "0x1c33b35922d54375d1f2db161bd58b6a5f06c1c0ad031ca2573a39d344ddd9b"
+      "class_hash": "0x5990e09741eb7d9b01b10fbe676a3d6088131af5f3e198606df9f786fed65aa",
+      "tag": "tomie3-GameEndedEvent",
+      "selector": "0x7dfd3dfb5ed701421777daa1d445b82f25d73c5143f797d95c2e0a4bd2b3f98"
     },
     {
       "members": [],
-      "class_hash": "0x2767f257429965cd1ad99d1377e2f047e65686f3953fa80c29ded074af3502a",
-      "tag": "tomie1-GameStarted",
-      "selector": "0x772c75e8c808731c215eaf12c2d9063b501c172ba0835073b6d7443459541f5"
+      "class_hash": "0x1c938ec7ab2a57b3b272023e99e3c89eadfeee0fcf1e18fa3e33409fc3d389c",
+      "tag": "tomie3-GameStartedEvent",
+      "selector": "0x7dced8e3728083d65c3febdce3e330302b1d796469950ce930ee9c9431d1134"
     },
     {
       "members": [],
-      "class_hash": "0x2196c010536fec0e6c0fe9f6a24ce920af21f4543a3f2187891dc721e0f39c0",
-      "tag": "tomie1-TomieExpression",
-      "selector": "0x3c53f95923d0411d0f9b82580cc5e3de3abe7636249fb5bbd19d314ad897dd"
+      "class_hash": "0xc082ffce27a38eb01322e3320c0b0bba62e51330daada4ceaa89aae8ff768d",
+      "tag": "tomie3-TomieExpressionEvent",
+      "selector": "0xc0b7dc0a2f65fef5245e4560adae8ec9af95164bfa0069a140221216babad9"
     },
     {
       "members": [],
-      "class_hash": "0x3683ded6044c6660b40617fc0b62dff9e0d0226f70ab718ce72f1f62633a1c0",
-      "tag": "tomie1-YanKenPonResult",
-      "selector": "0x532a1afe0a8044d9ee40a52a456a1b830159ef7a046d101e7b5299457a14f28"
+      "class_hash": "0x5c16e6f4e19d68e997d0cc8df72473830489f645f312511b2c3b3470887f1bf",
+      "tag": "tomie3-YanKenPonResultEvent",
+      "selector": "0x36ce6e89a85f8f765db8b980a5521984822f328f457026e8bb5eef2b2894ceb"
     }
   ],
   "external_contracts": []

@@ -27,12 +27,17 @@ export const useGameData = (gameId?: number) => {
     setError(null);
 
     try {
-      const battleQuery = `
+      const gameQuery = `
         query GetGame($gameId: Int!) {
-          tomie1GamesGameModels(where: { id: $gameId }) {
+          tomie3GameModels(where: { id: $gameId }) {
             edges {
               node {
                 id
+                player
+                lives
+                tomie_lives
+                current_minigame
+                in_progress
               }
             }
           }
@@ -46,7 +51,7 @@ export const useGameData = (gameId?: number) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            query: battleQuery,
+            query: gameQuery,
             variables: { gameId }
           }),
         }),
@@ -66,11 +71,16 @@ export const useGameData = (gameId?: number) => {
         throw new Error(`GraphQL game error: ${gameResult.errors[0]?.message || 'Unknown error'}`);
       }
       
-      if (gameResult.data?.tomie1GamesGameModels?.edges?.length > 0) {
-        const gameNode = gameResult.data.tomie1GamesGameModels.edges[0].node;
+      if (gameResult.data?.tomie3GameModels?.edges?.length > 0) {
+        const gameNode = gameResult.data.tomie3GameModels.edges[0].node;
         
         gameData = {
           id: toNumber(gameNode.id),
+          player: gameNode.player,
+          lives: toNumber(gameNode.lives),
+          tomie_lives: toNumber(gameNode.tomie_lives),
+          current_minigame: toNumber(gameNode.current_minigame),
+          in_progress: gameNode.in_progress,
         } as Game;
       } else {
         gameData = null;

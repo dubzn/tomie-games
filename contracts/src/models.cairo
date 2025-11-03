@@ -30,7 +30,7 @@ pub struct CurrentGame {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct TomieExpression {
+pub struct TomieExpressionEvent {
     #[key]
     pub game_id: u32,
     pub expression_id: u32,
@@ -38,7 +38,7 @@ pub struct TomieExpression {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct YanKenPonResult {
+pub struct YanKenPonResultEvent {
     #[key]
     pub game_id: u32,
     pub player_choice: u8,
@@ -48,7 +48,7 @@ pub struct YanKenPonResult {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct DiceResult {
+pub struct DiceResultEvent {
     #[key]
     pub game_id: u32,
     pub player_choice: u8,
@@ -58,7 +58,7 @@ pub struct DiceResult {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct GameStarted {
+pub struct GameStartedEvent {
     #[key]
     pub game_id: u32,
     pub player: ContractAddress,
@@ -69,7 +69,7 @@ pub struct GameStarted {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct GameEnded {
+pub struct GameEndedEvent {
     #[key]
     pub game_id: u32,
     pub player: ContractAddress,

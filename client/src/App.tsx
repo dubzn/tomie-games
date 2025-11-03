@@ -4,6 +4,7 @@ import { useAccount, useConnect } from '@starknet-react/core'
 import './App.css'
 import HomeScreen from './components/Home'
 import GameScreen from './components/Game'
+import TableScreen from './components/Table'
 import { useActions } from './hooks/useActions'
 import { AudioProvider } from './hooks/useAudio'
 export { useAudio } from './hooks/useAudio'
@@ -52,8 +53,9 @@ function Home() {
     
     try {
       const result = await newGame()
-      if (result) {
-        navigate(`/game/${result}`)
+      if (result && result.game_id) {
+        const gameId = typeof result.game_id === 'bigint' ? result.game_id.toString() : String(result.game_id)
+        navigate(`/game/${gameId}`)
       } else {
         throw new Error('Failed to create new game')
       }
@@ -91,6 +93,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/game" element={<GameScreen />} />
+          <Route path="/game/:gameId" element={<TableScreen />} />
         </Routes>
       </div>
     </AudioProvider>

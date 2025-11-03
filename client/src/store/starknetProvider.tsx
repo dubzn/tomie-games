@@ -10,7 +10,7 @@ import { WalletSessionManager } from "../components/WalletSessionManager";
 
 const actions_contract = getContractByName(
   dojoConfig.manifest,
-  "tomie1",
+  "tomie3",
   "actions"
 );
 
@@ -39,14 +39,14 @@ const controller = new ControllerConnector({
       rpcUrl: import.meta.env.VITE_RPC_URL || "http://localhost:5050",
     },
   ],
-  defaultChainId: shortString.encodeShortString("WP_TOMIE1"),
+  defaultChainId: shortString.encodeShortString("WP_TOMIE3"),
   policies,
 });
 
 const slot: Chain = {
-  id: num.toBigInt(shortString.encodeShortString("WP_TOMIE1")),
+  id: num.toBigInt(shortString.encodeShortString("WP_TOMIE3")),
   name: "Tomie",
-  network: "tomie1",
+  network: "tomie3",
   rpcUrls: {
     default: {
       http: [import.meta.env.VITE_RPC_URL],

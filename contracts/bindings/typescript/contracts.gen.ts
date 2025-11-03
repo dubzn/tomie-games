@@ -17,7 +17,7 @@ export function setupWorld(provider: DojoProvider) {
 			return await provider.execute(
 				snAccount,
 				build_actions_newGame_calldata(),
-				"tomie1",
+				"tomie3",
 			);
 		} catch (error) {
 			console.error(error);
@@ -25,20 +25,20 @@ export function setupWorld(provider: DojoProvider) {
 		}
 	};
 
-	const build_actions_play_calldata = (): DojoCall => {
+	const build_actions_play_calldata = (gameId: BigNumberish, choice: BigNumberish): DojoCall => {
 		return {
 			contractName: "actions",
 			entrypoint: "play",
-			calldata: [],
+			calldata: [gameId, choice],
 		};
 	};
 
-	const actions_play = async (snAccount: Account | AccountInterface) => {
+	const actions_play = async (snAccount: Account | AccountInterface, gameId: BigNumberish, choice: BigNumberish) => {
 		try {
 			return await provider.execute(
 				snAccount,
-				build_actions_play_calldata(),
-				"tomie1",
+				build_actions_play_calldata(gameId, choice),
+				"tomie3",
 			);
 		} catch (error) {
 			console.error(error);
