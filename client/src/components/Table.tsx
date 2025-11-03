@@ -52,6 +52,8 @@ export default function TableScreen() {
   const [currentGameEndDialogueIndex, setCurrentGameEndDialogueIndex] = useState(0);
   const [isGameEndTextComplete, setIsGameEndTextComplete] = useState(false);
   const [playerWon, setPlayerWon] = useState<boolean | null>(null);
+  const [isGameEnding, setIsGameEnding] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
 
   // Función para reproducir un audio aleatorio
   const playRandomSound = () => {
@@ -145,7 +147,7 @@ export default function TableScreen() {
             setGamePhase('choices');
             setShowChoices(true);
           }
-        }, 3000);
+        }, 2000);
       }
     }, 50);
 
@@ -166,12 +168,11 @@ export default function TableScreen() {
           if (currentDialogueIndex < introDialogues.length - 1) {
             setCurrentDialogueIndex(prev => prev + 1);
           } else {
-            // Si es el último diálogo, pasar a choices
             setDisplayText(choicePrompt);
             setGamePhase('choices');
             setShowChoices(true);
           }
-        }, 3000);
+        }, 2000);
       } else {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (currentDialogueIndex < introDialogues.length - 1) {
@@ -198,10 +199,9 @@ export default function TableScreen() {
         if (currentResultDialogueIndex < resultDialogues.length - 1) {
           setCurrentResultDialogueIndex(prev => prev + 1);
         } else {
-          // Si es el último diálogo, incrementar para disparar transición
           setCurrentResultDialogueIndex(prev => prev + 1);
         }
-      }, 3000);
+      }, 2000);
       return () => clearTimeout(timeout);
     } else if (isResultTextComplete) {
       if (currentResultDialogueIndex < resultDialogues.length - 1) {
@@ -221,17 +221,20 @@ export default function TableScreen() {
         if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
           setCurrentGameEndDialogueIndex(prev => prev + 1);
         } else {
-          // Redirigir después del último diálogo
+          // Activar fade a negro antes de redirigir
+          setIsFadingOut(true);
           setTimeout(() => {
             navigate(playerWon ? '/victory' : '/defeat');
           }, 2000);
         }
-      }, 3000);
+      }, 2000);
       return () => clearTimeout(timeout);
     } else if (isGameEndTextComplete) {
       if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
         setCurrentGameEndDialogueIndex(prev => prev + 1);
       } else {
+        // Activar fade a negro antes de redirigir
+        setIsFadingOut(true);
         setTimeout(() => {
           navigate(playerWon ? '/victory' : '/defeat');
         }, 2000);
@@ -271,10 +274,7 @@ export default function TableScreen() {
       if (result && result.parsed_events) {
         console.log('Play result:', result);
         
-        // Refetch game data after play
-        refetchGameData();
-        
-        // Check for GameEndedEvent first
+        // Check for GameEndedEvent first (but don't process it yet, wait for result animation)
         const gameEndEvent = result.parsed_events.find(
           (event) => event.key === 'GameEndedEvent'
         );
@@ -284,6 +284,7 @@ export default function TableScreen() {
           const wonValue = gameEndEvent.data.player_won;
           const won = wonValue === true || wonValue === 1 || wonValue === '1' || String(wonValue).toLowerCase() === 'true';
           setPlayerWon(won);
+          setIsGameEnding(true);
           
           const endDialogues = won
             ? [
@@ -294,10 +295,6 @@ export default function TableScreen() {
               ];
           
           setGameEndDialogues(endDialogues);
-          setGamePhase('game-ended');
-          setCurrentGameEndDialogueIndex(0);
-          setIsGameEndTextComplete(false);
-          return;
         }
         
         // Handle YanKenPonResultEvent (round result)
@@ -345,7 +342,14 @@ export default function TableScreen() {
             setGamePhase('result-dialogues');
             setCurrentResultDialogueIndex(0);
             setIsResultTextComplete(false);
+            // Refetch game data after animation to get updated state
+            refetchGameData();
           }, 4500);
+        } else {
+          // Si no hay resultado pero sí hay GameEndedEvent, refetch igual
+          if (gameEndEvent) {
+            refetchGameData();
+          }
         }
       }
     } catch (err) {
@@ -367,17 +371,30 @@ export default function TableScreen() {
   useEffect(() => {
     if (gamePhase !== 'result-dialogues') return;
     
-    // Si ya terminamos todos los diálogos, volver a choices
+    // Si ya terminamos todos los diálogos
     if (currentResultDialogueIndex >= resultDialogues.length) {
       const restoreTimer = setTimeout(() => {
-        setDisplayText(choicePrompt);
-        setGamePhase('choices');
-        setShowChoices(true);
-        setSelectedChoice(null);
-        setAnimationComplete(false);
-        setCurrentResultDialogueIndex(0);
-        setResultDialogues([]);
-        gameResult.current = null;
+        // Si el juego terminó, pasar a game-ended
+        if (isGameEnding) {
+          setGamePhase('game-ended');
+          setCurrentGameEndDialogueIndex(0);
+          setIsGameEndTextComplete(false);
+          setAnimationComplete(false);
+          setCurrentResultDialogueIndex(0);
+          setResultDialogues([]);
+          gameResult.current = null;
+          setIsGameEnding(false); // Reset flag
+        } else {
+          // Si no terminó, volver a choices
+          setDisplayText(choicePrompt);
+          setGamePhase('choices');
+          setShowChoices(true);
+          setSelectedChoice(null);
+          setAnimationComplete(false);
+          setCurrentResultDialogueIndex(0);
+          setResultDialogues([]);
+          gameResult.current = null;
+        }
       }, 2000);
       return () => clearTimeout(restoreTimer);
     }
@@ -410,7 +427,7 @@ export default function TableScreen() {
       clearInterval(interval);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentResultDialogueIndex, gamePhase, resultDialogues]);
+  }, [currentResultDialogueIndex, gamePhase, resultDialogues, isGameEnding]);
   
   // Game End Dialogues Effect
   useEffect(() => {
@@ -435,7 +452,8 @@ export default function TableScreen() {
           if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
             setCurrentGameEndDialogueIndex(prev => prev + 1);
           } else {
-            // Redirect after last dialogue
+            // Activar fade a negro antes de redirigir
+            setIsFadingOut(true);
             setTimeout(() => {
               navigate(playerWon ? '/victory' : '/defeat');
             }, 2000);
@@ -571,6 +589,9 @@ export default function TableScreen() {
           </div>
         </div>
       )}
+
+      {/* Fade a negro */}
+      <div className={`fade-to-black ${isFadingOut ? 'fade-out-active' : ''}`}></div>
     </div>
   );
 }

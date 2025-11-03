@@ -199,7 +199,6 @@
   z-index: 1;
   will-change: transform;
   opacity: 0;
-  transition: opacity 1s ease-in-out;
 }
 
 .game-background img {
@@ -211,10 +210,14 @@
   left: 50%;
   transform: translate(-50%, -50%);
   transition: filter 0.8s ease-in-out;
+  /* Animaciones sutiles de oscuridad (10s) y zoom (12s) */
+  animation: pulse-darkness 10s ease-in-out infinite, subtle-zoom-img 12s ease-in-out infinite;
 }
 
 .game-background.darkened img {
   filter: brightness(0.5);
+  /* Mantener las animaciones incluso cuando está oscurecido */
+  animation: pulse-darkness-dark 10s ease-in-out infinite, subtle-zoom-img 12s ease-in-out infinite;
 }
 
 .game-character {
@@ -226,7 +229,6 @@
   pointer-events: none;
   transform: translate(-50%, -50%);
   opacity: 0;
-  transition: opacity 1.2s ease-in-out 0.3s;
 }
 
 .game-character img {
@@ -251,12 +253,11 @@
   min-height: 25vh;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   border: 5px solid #000000;
   box-sizing: border-box;
   box-shadow: inset 0 0 0 2px #000000;
   opacity: 0;
-  transition: opacity 1s ease-in-out 0.6s, transform 1s ease-in-out 0.6s;
 }
 
 .game-text-content {
@@ -267,7 +268,8 @@
   max-width: 90%;
   word-wrap: break-word;
   font-weight: normal;
-  align-items: start;
+  text-align: left;
+  width: 100%;
 }
 
 .game-text-content .cursor {
@@ -285,17 +287,76 @@
   }
 }
 
-/* Transiciones de entrada para las imágenes */
+/* Animación paulatina de oscuridad para game_bg (10 segundos) */
+@keyframes pulse-darkness {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(0.85);
+  }
+}
+
+/* Animación paulatina de oscuridad para game_bg cuando ya está darkened */
+@keyframes pulse-darkness-dark {
+  0%, 100% {
+    filter: brightness(0.5);
+  }
+  50% {
+    filter: brightness(0.42);
+  }
+}
+
+/* Animación sutil de zoom in/out para game_bg (12 segundos) - aplicada a la imagen */
+@keyframes subtle-zoom-img {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.015);
+  }
+}
+
+/* Transiciones de entrada para las imágenes - desde negro total */
 .game-background.fade-in {
-  opacity: 1;
+  animation: fade-in-background 1.8s ease-out forwards;
+}
+
+@keyframes fade-in-background {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .game-character.fade-in-delay {
-  opacity: 1;
+  animation: fade-in-character 2s ease-out 0.6s forwards;
+}
+
+@keyframes fade-in-character {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .game-text-box.fade-in-delay-2 {
-  opacity: 1;
+  animation: fade-in-text-box 1.6s ease-out 1.2s forwards;
+}
+
+@keyframes fade-in-text-box {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Botón de acción del juego */
@@ -753,5 +814,24 @@
     font-size: clamp(32px, 6vw, 60px);
     padding: clamp(15px, 2vw, 20px) clamp(30px, 4vw, 40px);
   }
+}
+
+/* Fade to black overlay */
+.fade-to-black {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s ease-in-out;
+}
+
+.fade-to-black.fade-out-active {
+  opacity: 1;
+  pointer-events: all;
 }
 

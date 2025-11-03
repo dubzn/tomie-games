@@ -5,6 +5,8 @@ import './App.css'
 import HomeScreen from './components/Home'
 import GameScreen from './components/Game'
 import TableScreen from './components/Table'
+import DefeatScreen from './components/Defeat'
+import VictoryScreen from './components/Victory'
 import { useActions } from './hooks/useActions'
 import { AudioProvider } from './hooks/useAudio'
 export { useAudio } from './hooks/useAudio'
@@ -17,14 +19,17 @@ function Home() {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isFadingOut, setIsFadingOut] = useState(false)
  
   const connected = !!account && status === 'connected'
 
   useEffect(() => {
     if (connected && account && address) {
+      // Activar fade a negro antes de navegar
+      setIsFadingOut(true)
       const timer = setTimeout(() => {
         navigate('/game')
-      }, 1000)
+      }, 2000) // Tiempo para el fade a negro
       return () => clearTimeout(timer)
     }
   }, [connected, account, address, status, navigate])
@@ -55,7 +60,11 @@ function Home() {
       const result = await newGame()
       if (result && result.game_id) {
         const gameId = typeof result.game_id === 'bigint' ? result.game_id.toString() : String(result.game_id)
-        navigate(`/game/${gameId}`)
+        // Activar fade a negro antes de navegar
+        setIsFadingOut(true)
+        setTimeout(() => {
+          navigate(`/game/${gameId}`)
+        }, 2000) // Tiempo para el fade a negro
       } else {
         throw new Error('Failed to create new game')
       }
@@ -63,6 +72,7 @@ function Home() {
     } catch (err) {
       console.error('Error creating new game:', err)
       setError(err instanceof Error ? err.message : 'Failed to create new game')
+      setIsFadingOut(false) // Cancelar fade si hay error
     } finally {
       setLoading(false)
     }
@@ -82,6 +92,9 @@ function Home() {
         loading={loading || actionLoading}
         connected={connected}
       />
+      
+      {/* Fade a negro */}
+      <div className={`fade-to-black ${isFadingOut ? 'fade-out-active' : ''}`}></div>
     </>
   )
 }
@@ -94,6 +107,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/game" element={<GameScreen />} />
           <Route path="/game/:gameId" element={<TableScreen />} />
+          <Route path="/defeat" element={<DefeatScreen />} />
+          <Route path="/victory" element={<VictoryScreen />} />
         </Routes>
       </div>
     </AudioProvider>

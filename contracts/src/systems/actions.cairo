@@ -74,7 +74,7 @@ pub mod actions {
                             },
                         );
 
-                    if result == PLAYER_WINS {
+                    if result == TOMIE_WINS {
                         game.lives -= 1;
                         if random.between(0, 100) < 50 {
                             world.emit_event(@TomieExpressionEvent {
@@ -82,7 +82,7 @@ pub mod actions {
                                 expression_id: 2,
                             });
                         }
-                    } else if result == TOMIE_WINS {
+                    } else if result == PLAYER_WINS {
                         if random.between(0, 100) < 50 {
                             world.emit_event(@TomieExpressionEvent {
                                 game_id: game_id,
