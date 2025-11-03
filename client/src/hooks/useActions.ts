@@ -116,7 +116,7 @@ export const useActions = () => {
           } else if (event.keys[1] === getEventKey("TomieExpressionEvent")) {
             parsed_events.push({ key: "TomieExpressionEvent", data: { game_id: toNumber(event.data[1]), expression_id: toNumber(event.data[2]) } });
           } else if (event.keys[1] === getEventKey("GameEndedEvent")) {
-            parsed_events.push({ key: "GameEndedEvent", data: { game_id: toNumber(event.data[1]), player: event.data[2], player_won: event.data[3] } });
+            parsed_events.push({ key: "GameEndedEvent", data: { game_id: toNumber(event.data[1]), player_won: event.data[3] } });
           } else {}
         }
         return { transaction_hash, parsed_events };

@@ -1,34 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import '../App.css';
 import '../assets/font.css';
 import { useActions } from '../hooks/useActions';
 
+type GamePhase = 'intro' | 'choices' | 'result-animation' | 'result-dialogues' | 'game-ended';
+
 export default function TableScreen() {
   const { gameId } = useParams<{ gameId: string }>();
+  const navigate = useNavigate();
   const { play, loading: actionLoading, error: actionError } = useActions();
+  
+  // UI State
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [displayText, setDisplayText] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const playSoundRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Game Phase Management
+  const [gamePhase, setGamePhase] = useState<GamePhase>('intro');
+  
+  // Intro Dialogues State
+  const [displayText, setDisplayText] = useState('');
   const [currentDialogueIndex, setCurrentDialogueIndex] = useState(0);
   const [isTextComplete, setIsTextComplete] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Choices State
   const [showChoices, setShowChoices] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [showResultDialogues, setShowResultDialogues] = useState(false);
-  const [currentResultDialogueIndex, setCurrentResultDialogueIndex] = useState(0);
-  const [isResultTextComplete, setIsResultTextComplete] = useState(false);
+  
+  // Result Animation State
   const [animationComplete, setAnimationComplete] = useState(false);
   const gameResult = useRef<{
     playerChoice: number;
     tomieChoice: number;
     winner: 'DRAW' | 'PLAYER_WINS' | 'TOMIE_WINS';
   } | null>(null);
+  
+  // Result Dialogues State
   const [resultDialogues, setResultDialogues] = useState<string[]>([]);
-  const tableRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const playSoundRef = useRef<HTMLAudioElement | null>(null);
+  const [currentResultDialogueIndex, setCurrentResultDialogueIndex] = useState(0);
+  const [isResultTextComplete, setIsResultTextComplete] = useState(false);
+  
+  // Game End State
+  const [gameEndDialogues, setGameEndDialogues] = useState<string[]>([]);
+  const [currentGameEndDialogueIndex, setCurrentGameEndDialogueIndex] = useState(0);
+  const [isGameEndTextComplete, setIsGameEndTextComplete] = useState(false);
+  const [playerWon, setPlayerWon] = useState<boolean | null>(null);
 
   // Función para reproducir un audio aleatorio
   const playRandomSound = () => {
@@ -50,11 +70,12 @@ export default function TableScreen() {
     });
   };
   
-  const dialogues = [
+  const introDialogues = [
     "Tomie: We're going to play rock, paper, scissors. Simple, right?",
-    "Tomie: But there's something more to this game than meets the eye. Let's see what happens...",
-    "Tomie: What do you choose?"
+    "Tomie: But there's something more to this game than meets the eye. Let's see what happens..."
   ];
+  
+  const choicePrompt = "Tomie: What do you choose?";
   
   useEffect(() => {
     setIsLoaded(true);
@@ -82,22 +103,25 @@ export default function TableScreen() {
     };
   }, []);
 
-  // Animación de escritura del diálogo actual
+  // Intro Dialogues Effect
   useEffect(() => {
-    if (currentDialogueIndex >= dialogues.length) return;
+    if (gamePhase !== 'intro') return;
+    
+    // Si ya terminamos todos los diálogos, pasar a choices
+    if (currentDialogueIndex >= introDialogues.length) {
+      setDisplayText(choicePrompt);
+      setGamePhase('choices');
+      setShowChoices(true);
+      return;
+    }
     
     setDisplayText('');
     setIsTextComplete(false);
-    const currentDialogue = dialogues[currentDialogueIndex];
+    const currentDialogue = introDialogues[currentDialogueIndex];
     const currentIndexRef = { value: 0 };
     
-    // Limpiar intervalos anteriores
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     
     intervalRef.current = setInterval(() => {
       if (currentIndexRef.value < currentDialogue.length) {
@@ -109,12 +133,13 @@ export default function TableScreen() {
           intervalRef.current = null;
         }
         setIsTextComplete(true);
-        // Cambiar al siguiente diálogo después de 3 segundos
         timeoutRef.current = setTimeout(() => {
-          if (currentDialogueIndex < dialogues.length - 1) {
+          if (currentDialogueIndex < introDialogues.length - 1) {
             setCurrentDialogueIndex(prev => prev + 1);
           } else {
-            // Todos los diálogos terminaron, mostrar botones
+            // Si es el último diálogo, pasar directamente a choices
+            setDisplayText(choicePrompt);
+            setGamePhase('choices');
             setShowChoices(true);
           }
         }, 3000);
@@ -122,54 +147,91 @@ export default function TableScreen() {
     }, 50);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [currentDialogueIndex]);
+  }, [currentDialogueIndex, gamePhase]);
 
-  const handleClick = () => {
-    if (currentDialogueIndex >= dialogues.length) return;
-
-    const currentDialogue = dialogues[currentDialogueIndex];
-
-    // Si el texto no está completo, completarlo inmediatamente
-    if (!isTextComplete) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setDisplayText(currentDialogue);
-      setIsTextComplete(true);
-      
-      // Iniciar el timeout para el siguiente diálogo
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
-        if (currentDialogueIndex < dialogues.length - 1) {
+  const handleDialogueClick = () => {
+    if (gamePhase === 'intro') {
+      const currentDialogue = introDialogues[currentDialogueIndex];
+      if (!isTextComplete) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setDisplayText(currentDialogue);
+        setIsTextComplete(true);
+        timeoutRef.current = setTimeout(() => {
+          if (currentDialogueIndex < introDialogues.length - 1) {
+            setCurrentDialogueIndex(prev => prev + 1);
+          } else {
+            // Si es el último diálogo, pasar a choices
+            setDisplayText(choicePrompt);
+            setGamePhase('choices');
+            setShowChoices(true);
+          }
+        }, 3000);
+      } else {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (currentDialogueIndex < introDialogues.length - 1) {
           setCurrentDialogueIndex(prev => prev + 1);
         } else {
-          // Todos los diálogos terminaron, mostrar botones
+          // Si es el último diálogo, pasar a choices
+          setDisplayText(choicePrompt);
+          setGamePhase('choices');
           setShowChoices(true);
         }
-      }, 3000);
-    } else {
-      // Si el texto está completo, ir al siguiente diálogo inmediatamente
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
       }
-      if (currentDialogueIndex < dialogues.length - 1) {
-        setCurrentDialogueIndex(prev => prev + 1);
+    } else if (gamePhase === 'result-dialogues') {
+      handleResultDialogueClick();
+    } else if (gamePhase === 'game-ended') {
+      handleGameEndDialogueClick();
+    }
+  };
+  
+  const handleResultDialogueClick = () => {
+    if (!isResultTextComplete && resultDialogues[currentResultDialogueIndex]) {
+      setDisplayText(resultDialogues[currentResultDialogueIndex]);
+      setIsResultTextComplete(true);
+      const timeout = setTimeout(() => {
+        if (currentResultDialogueIndex < resultDialogues.length - 1) {
+          setCurrentResultDialogueIndex(prev => prev + 1);
+        } else {
+          // Si es el último diálogo, incrementar para disparar transición
+          setCurrentResultDialogueIndex(prev => prev + 1);
+        }
+      }, 3000);
+      return () => clearTimeout(timeout);
+    } else if (isResultTextComplete) {
+      if (currentResultDialogueIndex < resultDialogues.length - 1) {
+        setCurrentResultDialogueIndex(prev => prev + 1);
       } else {
-        // Todos los diálogos terminaron, mostrar botones
-        setShowChoices(true);
+        // Si es el último diálogo, incrementar para disparar transición
+        setCurrentResultDialogueIndex(prev => prev + 1);
+      }
+    }
+  };
+  
+  const handleGameEndDialogueClick = () => {
+    if (!isGameEndTextComplete && gameEndDialogues[currentGameEndDialogueIndex]) {
+      setDisplayText(gameEndDialogues[currentGameEndDialogueIndex]);
+      setIsGameEndTextComplete(true);
+      const timeout = setTimeout(() => {
+        if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+          setCurrentGameEndDialogueIndex(prev => prev + 1);
+        } else {
+          // Redirigir después del último diálogo
+          setTimeout(() => {
+            navigate(playerWon ? '/victory' : '/defeat');
+          }, 2000);
+        }
+      }, 3000);
+      return () => clearTimeout(timeout);
+    } else if (isGameEndTextComplete) {
+      if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+        setCurrentGameEndDialogueIndex(prev => prev + 1);
+      } else {
+        setTimeout(() => {
+          navigate(playerWon ? '/victory' : '/defeat');
+        }, 2000);
       }
     }
   };
@@ -200,18 +262,46 @@ export default function TableScreen() {
 
     try {
       console.log('Playing gameId:', gameIdNumber, 'with choice:', choiceNumber);
-      // Reproducir audio aleatorio al mismo tiempo que se ejecuta la transacción
       playRandomSound();
       const result = await play(gameIdNumber, choiceNumber);
+      
       if (result && result.parsed_events) {
         console.log('Play result:', result);
-        // Buscar el evento de resultado
+        
+        // Check for GameEndedEvent first
+        const gameEndEvent = result.parsed_events.find(
+          (event) => event.key === 'GameEndedEvent'
+        );
+        
+        if (gameEndEvent && gameEndEvent.data) {
+          // Parse player_won from Starknet event (could be boolean, string, or number)
+          const wonValue = gameEndEvent.data.player_won;
+          const won = wonValue === true || wonValue === 1 || wonValue === '1' || String(wonValue).toLowerCase() === 'true';
+          setPlayerWon(won);
+          
+          const endDialogues = won
+            ? [
+                "Tomie: You've won... this time.",
+                "Tomie: But remember, victory in this game comes with consequences you cannot escape."
+              ]
+            : [
+                "Tomie: You've lost... as expected.",
+                "Tomie: The game is over, but this is just the beginning of your story."
+              ];
+          
+          setGameEndDialogues(endDialogues);
+          setGamePhase('game-ended');
+          setCurrentGameEndDialogueIndex(0);
+          setIsGameEndTextComplete(false);
+          return;
+        }
+        
+        // Handle YanKenPonResultEvent (round result)
         const resultEvent = result.parsed_events.find(
           (event) => event.key === 'YanKenPonResultEvent'
         );
         
         if (resultEvent && resultEvent.data) {
-          // Obtener los números de choice (1, 2, 3)
           const getChoiceNumber = (choice: string): number => {
             switch (choice) {
               case 'ROCK': return 1;
@@ -226,9 +316,7 @@ export default function TableScreen() {
             tomieChoice: getChoiceNumber(resultEvent.data.tomie_choice),
             winner: resultEvent.data.result
           };
-          setShowResult(true);
           
-          // Configurar diálogos basados en el resultado
           const dialoguesByResult = {
             'DRAW': [
               "Tomie: A draw? How interesting... This means we're evenly matched.",
@@ -245,22 +333,24 @@ export default function TableScreen() {
           };
           
           setResultDialogues(dialoguesByResult[gameResult.current.winner]);
+          setGamePhase('result-animation');
+          setShowChoices(false);
           
-          // Marcar que la animación está completa después de 1.8 segundos
           setTimeout(() => {
             setAnimationComplete(true);
           }, 1800);
           
-          // Después de 4.5 segundos (tiempo de standby para ver las manos), mostrar diálogos
           setTimeout(() => {
-            setShowResultDialogues(true);
+            setGamePhase('result-dialogues');
             setCurrentResultDialogueIndex(0);
+            setIsResultTextComplete(false);
           }, 4500);
         }
       }
     } catch (err) {
       console.error('Error playing:', err);
-      setSelectedChoice(null); // Resetear si hay error
+      setSelectedChoice(null);
+      setGamePhase('choices');
     }
   };
 
@@ -272,25 +362,23 @@ export default function TableScreen() {
   const handTomieX = mousePosition.x * 20;
   const handTomieY = mousePosition.y * 20;
 
-  // Efecto para los diálogos de resultado
+  // Result Dialogues Effect
   useEffect(() => {
-    if (!showResultDialogues || currentResultDialogueIndex >= resultDialogues.length) {
-      // Cuando terminan todos los diálogos de resultado, restaurar todo y mostrar botones
-      if (showResultDialogues && currentResultDialogueIndex >= resultDialogues.length) {
-        const restoreTimeout = setTimeout(() => {
-          setShowResult(false);
-          setShowResultDialogues(false);
-          setCurrentResultDialogueIndex(0);
-          setResultDialogues([]);
-          setSelectedChoice(null);
-          setAnimationComplete(false);
-          gameResult.current = null;
-          // Volver a mostrar los botones de selección
-          setShowChoices(true);
-        }, 3000);
-        return () => clearTimeout(restoreTimeout);
-      }
-      return;
+    if (gamePhase !== 'result-dialogues') return;
+    
+    // Si ya terminamos todos los diálogos, volver a choices
+    if (currentResultDialogueIndex >= resultDialogues.length) {
+      const restoreTimer = setTimeout(() => {
+        setDisplayText(choicePrompt);
+        setGamePhase('choices');
+        setShowChoices(true);
+        setSelectedChoice(null);
+        setAnimationComplete(false);
+        setCurrentResultDialogueIndex(0);
+        setResultDialogues([]);
+        gameResult.current = null;
+      }, 2000);
+      return () => clearTimeout(restoreTimer);
     }
     
     setDisplayText('');
@@ -309,6 +397,9 @@ export default function TableScreen() {
         timeoutId = setTimeout(() => {
           if (currentResultDialogueIndex < resultDialogues.length - 1) {
             setCurrentResultDialogueIndex(prev => prev + 1);
+          } else {
+            // Si es el último diálogo, incrementar índice para disparar la transición
+            setCurrentResultDialogueIndex(prev => prev + 1);
           }
         }, 5000);
       }
@@ -316,16 +407,52 @@ export default function TableScreen() {
 
     return () => {
       clearInterval(interval);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentResultDialogueIndex, showResultDialogues, resultDialogues]);
+  }, [currentResultDialogueIndex, gamePhase, resultDialogues]);
+  
+  // Game End Dialogues Effect
+  useEffect(() => {
+    if (gamePhase !== 'game-ended' || currentGameEndDialogueIndex >= gameEndDialogues.length) {
+      return;
+    }
+    
+    setDisplayText('');
+    setIsGameEndTextComplete(false);
+    const currentDialogue = gameEndDialogues[currentGameEndDialogueIndex];
+    let currentIndex = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const interval = setInterval(() => {
+      if (currentIndex < currentDialogue.length) {
+        setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(interval);
+        setIsGameEndTextComplete(true);
+        timeoutId = setTimeout(() => {
+          if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+            setCurrentGameEndDialogueIndex(prev => prev + 1);
+          } else {
+            // Redirect after last dialogue
+            setTimeout(() => {
+              navigate(playerWon ? '/victory' : '/defeat');
+            }, 2000);
+          }
+        }, 3000);
+      }
+    }, 50);
+
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [currentGameEndDialogueIndex, gamePhase, gameEndDialogues, playerWon, navigate]);
 
   return (
     <div ref={tableRef} className="table-screen">
       <div 
-        className={`table-background ${isLoaded ? 'fade-in' : ''} ${showResult && !showResultDialogues ? 'darkened' : ''}`}
+        className={`table-background ${isLoaded ? 'fade-in' : ''} ${gamePhase === 'result-animation' ? 'darkened' : ''}`}
         style={{
           transform: `translate(calc(-50% + ${bgX}px), calc(-50% + ${bgY}px)) scale(1.08)`,
         }}
@@ -333,7 +460,7 @@ export default function TableScreen() {
         <img src="/backgrounds/table_bg.png" alt="Table background" />
       </div>
       
-      {!showResult && (
+      {gamePhase !== 'result-animation' && (
         <div className={`table-face-popup ${isLoaded ? 'fade-in-delay' : ''}`}>
           <img src="/backgrounds/face_2.png" alt="Face" />
         </div>
@@ -341,37 +468,22 @@ export default function TableScreen() {
 
       <div 
         className={`game-text-box ${isLoaded ? 'fade-in-delay-2' : ''}`}
-        onClick={() => {
-          if (showResultDialogues) {
-            // Manejar clicks en diálogos de resultado
-            if (!isResultTextComplete && resultDialogues[currentResultDialogueIndex]) {
-              setDisplayText(resultDialogues[currentResultDialogueIndex]);
-              setIsResultTextComplete(true);
-              setTimeout(() => {
-                if (currentResultDialogueIndex < resultDialogues.length - 1) {
-                  setCurrentResultDialogueIndex(prev => prev + 1);
-                }
-              }, 3000);
-            } else if (isResultTextComplete) {
-              if (currentResultDialogueIndex < resultDialogues.length - 1) {
-                setCurrentResultDialogueIndex(prev => prev + 1);
-              }
-            }
-          } else {
-            handleClick();
-          }
+        onClick={handleDialogueClick}
+        style={{ 
+          cursor: (gamePhase === 'intro' || gamePhase === 'result-dialogues' || gamePhase === 'game-ended') ? 'pointer' : 'default' 
         }}
-        style={{ cursor: (showResultDialogues || currentDialogueIndex < dialogues.length) ? 'pointer' : 'default' }}
       >
         <div className="game-text-content">
           {displayText}
-          {(!showResultDialogues || (showResultDialogues && !isResultTextComplete)) && (
+          {((gamePhase === 'intro' && !isTextComplete) || 
+            (gamePhase === 'result-dialogues' && !isResultTextComplete) ||
+            (gamePhase === 'game-ended' && !isGameEndTextComplete)) && (
             <span className="cursor">|</span>
           )}
         </div>
       </div>
 
-      {showChoices && !showResult && (
+      {showChoices && gamePhase === 'choices' && (
         <div className="choices-container fade-in-choices">
           {(!selectedChoice || selectedChoice === 'rock') && (
             <button 
@@ -409,7 +521,7 @@ export default function TableScreen() {
         </div>
       )}
 
-      {showResult && gameResult.current && !showResultDialogues && (
+      {gamePhase === 'result-animation' && gameResult.current && (
         <div className="result-animation">
             {/* Mano del jugador desde la izquierda */}
             <div 
