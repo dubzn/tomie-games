@@ -10,6 +10,7 @@ interface AudioContextType {
   toggleSound: () => void;
   playEffect: () => void;
   restartMusic: () => void;
+  playVoice: (audioPath: string) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -236,6 +237,16 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const playVoice = (audioPath: string) => {
+    if (isSoundEnabled && audioPath) {
+      const voiceAudio = new Audio(audioPath);
+      voiceAudio.volume = 0.4;
+      voiceAudio.play().catch(err => {
+        console.log('Error reproduciendo voz:', err);
+      });
+    }
+  };
+
   return (
     <AudioContext.Provider value={{
       isMusicEnabled,
@@ -243,7 +254,8 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       toggleMusic,
       toggleSound,
       playEffect,
-      restartMusic
+      restartMusic,
+      playVoice
     }}>
       {children}
     </AudioContext.Provider>

@@ -4,6 +4,7 @@ import '../App.css';
 import '../assets/font.css';
 import { useActions } from '../hooks/useActions';
 import { useGameData } from '../hooks/useGameData';
+import { useAudio } from '../hooks/useAudio';
 
 type GamePhase = 'intro' | 'choices' | 'result-animation' | 'result-dialogues' | 'game-ended';
 
@@ -11,6 +12,7 @@ export default function TableScreen() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { play, loading: actionLoading, error: actionError } = useActions();
+  const { playVoice } = useAudio();
   const gameIdNumber = gameId ? parseInt(gameId, 10) : undefined;
   const { game, refetch: refetchGameData } = useGameData(gameIdNumber);
   
@@ -82,8 +84,8 @@ export default function TableScreen() {
   };
   
   const introDialogues = [
-    "Tomie: We're going to play rock, paper, scissors. Simple, right?",
-    "Tomie: But there's something more to this game than meets the eye. Let's see what happens..."
+    "Tomie:\n We'll play rock, paper, scissors. Simple enough, right?",
+    "Tomie:\n But this isn't just any game... Let's see how deep your luck really goes."
   ];
   
   const choicePrompt = "Tomie: What do you choose?";
@@ -143,6 +145,9 @@ export default function TableScreen() {
     setDisplayText('');
     setIsTextComplete(false);
     const currentDialogue = introDialogues[currentDialogueIndex];
+    // Reproducir audio de voz según el índice del diálogo
+    const audioPath = currentDialogueIndex === 0 ? '/music/introDialogues_1.mp3' : '/music/introDialogues_2.mp3';
+    playVoice(audioPath);
     const currentIndexRef = { value: 0 };
     
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -188,7 +193,7 @@ export default function TableScreen() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [currentDialogueIndex, gamePhase]);
+  }, [currentDialogueIndex, gamePhase, playVoice]);
 
   const handleDialogueClick = () => {
     if (gamePhase === 'intro') {
@@ -332,14 +337,14 @@ export default function TableScreen() {
           setIsGameEnding(true);
           
           const endDialogues = won
-            ? [
-                "Tomie: You've won... this time.",
-              ]
-            : [
-                "Tomie: You've lost... as expected.",
-              ];
-          
+          ? [ "Tomie:\n You've won... for now." ]
+          : [ "Tomie:\n You've lost... just as I expected." ];
+        
           setGameEndDialogues(endDialogues);
+          
+          // Reproducir audio de fin de juego
+          const gameEndAudio = won ? '/music/gameEndedPlayerWin.mp3' : '/music/gameEndedPlayerLose.mp3';
+          playVoice(gameEndAudio);
         }
         
         // Handle TomieExpressionEvent (face popup)
@@ -380,25 +385,39 @@ export default function TableScreen() {
             }
           };
 
+          const winner = resultEvent.data.result as 'DRAW' | 'PLAYER_WINS' | 'TOMIE_WINS';
+          
           gameResult.current = {
             playerChoice: getChoiceNumber(resultEvent.data.player_choice),
             tomieChoice: getChoiceNumber(resultEvent.data.tomie_choice),
-            winner: resultEvent.data.result
+            winner: winner
           };
           
+          // RESULT DIALOGUES
           const dialoguesByResult = {
             'DRAW': [
-              "Tomie: A draw? How interesting... This means we're evenly matched.",
+              "Tomie:\n A draw... How curious. It seems we're evenly cursed.",
             ],
             'PLAYER_WINS': [
-              "Tomie: You won this round...",
-            ],
+              "Tomie:\n You won this round... but don't get too confident.",
+              ],
             'TOMIE_WINS': [
-              "Tomie: I win this round.",
-            ]
+              "Tomie:\n I win this round. You're starting to shake… how adorable.",
+            ],
           };
           
-          setResultDialogues(dialoguesByResult[gameResult.current.winner]);
+          // Mapeo de audio para resultados
+          const resultAudioMap = {
+            'DRAW': '/music/draw.mp3',
+            'PLAYER_WINS': '/music/playerWin.mp3',
+            'TOMIE_WINS': '/music/tomieWin.mp3'
+          };
+          
+          setResultDialogues(dialoguesByResult[winner]);
+          // Reproducir audio de resultado con delay de 2 segundos para no pisarse con el sonido de jankenpon
+          setTimeout(() => {
+            playVoice(resultAudioMap[winner]);
+          }, 3000);
           setGamePhase('result-animation');
           setShowChoices(false);
           

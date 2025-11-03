@@ -8,7 +8,7 @@ import '../assets/font.css';
 export default function DefeatScreen() {
   const navigate = useNavigate();
   const { disconnect } = useDisconnect();
-  const { restartMusic } = useAudio();
+  const { restartMusic, playVoice } = useAudio();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [displayText, setDisplayText] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -16,7 +16,7 @@ export default function DefeatScreen() {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const defeatRef = useRef<HTMLDivElement>(null);
   
-  const defeatText = "Tomie: You haven't been the only victim here... And you'll remain here for eternity, with me.";
+  const defeatText = "Tomie:\n You’re not the first to lose here... and you won’t be leaving. Ever.";
 
   useEffect(() => {
     setIsLoaded(true);
@@ -50,6 +50,9 @@ export default function DefeatScreen() {
     setIsTextComplete(false);
     let currentIndex = 0;
     
+    // Reproducir audio de voz cuando comienza el texto
+    playVoice('/music/defeatText.mp3');
+    
     const interval = setInterval(() => {
       if (currentIndex < defeatText.length) {
         setDisplayText(defeatText.slice(0, currentIndex + 1));
@@ -70,7 +73,7 @@ export default function DefeatScreen() {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [navigate, disconnect, restartMusic]);
+  }, [navigate, disconnect, restartMusic, playVoice]);
 
 
   // Calcular transformaciones basadas en mouse (parallax effect)

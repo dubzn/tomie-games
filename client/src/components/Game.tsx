@@ -3,6 +3,7 @@ import '../App.css';
 import '../assets/font.css';
 import { useActions } from '../hooks/useActions';
 import { useNavigate } from 'react-router-dom';
+import { useAudio } from '../hooks/useAudio';
 
 export default function GameScreen() {
   const navigate = useNavigate();
@@ -16,10 +17,11 @@ export default function GameScreen() {
   const [showButton, setShowButton] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
   const { newGame, loading: actionLoading, error: actionError } = useActions();
+  const { playVoice } = useAudio();
   
-  const idleText = "Tomie: Since you've made it this far, why not play a little game?";
-  const waitingText = "Tomie: What taking so long, you are not going to run away now, are you?"
-
+  const idleText = "Tomie:\n Since you've accepted my invitation... how about a little game?";
+  const waitingText = "Tomie:\n What's taking so long? You're not thinking of running away... are you?";
+  
   useEffect(() => {
     setIsLoaded(true);
   }, []);
@@ -80,7 +82,11 @@ export default function GameScreen() {
   useEffect(() => {
     setDisplayText('');
     const currentText = isWaiting ? waitingText : idleText;
+    const audioPath = isWaiting ? '/music/waitingText.mp3' : '/music/idleText.mp3';
     let currentIndex = 0;
+    
+    // Reproducir audio de voz cuando comienza el texto
+    playVoice(audioPath);
     
     const interval = setInterval(() => {
       if (currentIndex < currentText.length) {
@@ -92,7 +98,7 @@ export default function GameScreen() {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [isWaiting]);
+  }, [isWaiting, playVoice]);
 
   const bgX = mousePosition.x * 15;
   const bgY = mousePosition.y * 15;
