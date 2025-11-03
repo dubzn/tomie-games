@@ -9,6 +9,7 @@ import DefeatScreen from './components/Defeat'
 import VictoryScreen from './components/Victory'
 import { useActions } from './hooks/useActions'
 import { AudioProvider } from './hooks/useAudio'
+import { useBackgroundMusic } from './hooks/useBackgroundMusic'
 export { useAudio } from './hooks/useAudio'
 
 function Home() {
@@ -100,6 +101,8 @@ function Home() {
 }
 
 function App() {
+  useBackgroundMusic();
+  
   return (
     <AudioProvider>
       <div className="app-container">

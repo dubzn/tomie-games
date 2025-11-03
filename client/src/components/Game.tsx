@@ -15,7 +15,6 @@ export default function GameScreen() {
   const [isFadingToTable, setIsFadingToTable] = useState(false);
   const [showButton, setShowButton] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
-  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
   const { newGame, loading: actionLoading, error: actionError } = useActions();
   
   const idleText = "Tomie: Since you've made it this far, why not play a little game?";
@@ -23,49 +22,6 @@ export default function GameScreen() {
 
   useEffect(() => {
     setIsLoaded(true);
-    
-    // Inicializar y reproducir música de fondo con fade in
-    bgMusicRef.current = new Audio('/music/bg.mp3');
-    bgMusicRef.current.loop = true;
-    bgMusicRef.current.volume = 0;
-    
-    const fadeIn = () => {
-      if (bgMusicRef.current) {
-        bgMusicRef.current.play().catch(err => {
-          console.log('Error reproducing background music:', err);
-        });
-        
-        // Fade in durante 2 segundos
-        const fadeInterval = setInterval(() => {
-          if (bgMusicRef.current && bgMusicRef.current.volume < 0.4) {
-            bgMusicRef.current.volume = Math.min(bgMusicRef.current.volume + 0.02, 0.4);
-          } else {
-            clearInterval(fadeInterval);
-          }
-        }, 50);
-      }
-    };
-    
-    // Pequeño delay antes de empezar la música
-    const musicTimer = setTimeout(fadeIn, 500);
-    
-    return () => {
-      clearTimeout(musicTimer);
-      if (bgMusicRef.current) {
-        // Fade out antes de detener
-        const fadeInterval = setInterval(() => {
-          if (bgMusicRef.current && bgMusicRef.current.volume > 0) {
-            bgMusicRef.current.volume = Math.max(bgMusicRef.current.volume - 0.05, 0);
-          } else {
-            clearInterval(fadeInterval);
-            if (bgMusicRef.current) {
-              bgMusicRef.current.pause();
-              bgMusicRef.current = null;
-            }
-          }
-        }, 50);
-      }
-    };
   }, []);
   
   useEffect(() => {
@@ -143,23 +99,6 @@ export default function GameScreen() {
   const charX = mousePosition.x * 30;
   const charY = mousePosition.y * 30;
 
-  // Fade out de música cuando hay transición
-  useEffect(() => {
-    if (isFadingToTable && bgMusicRef.current) {
-      const fadeInterval = setInterval(() => {
-        if (bgMusicRef.current && bgMusicRef.current.volume > 0) {
-          bgMusicRef.current.volume = Math.max(bgMusicRef.current.volume - 0.05, 0);
-        } else {
-          clearInterval(fadeInterval);
-          if (bgMusicRef.current) {
-            bgMusicRef.current.pause();
-          }
-        }
-      }, 50);
-      
-      return () => clearInterval(fadeInterval);
-    }
-  }, [isFadingToTable]);
 
   const handleNewGame = async () => {
     try {

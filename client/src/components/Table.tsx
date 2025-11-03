@@ -46,6 +46,7 @@ export default function TableScreen() {
   const [resultDialogues, setResultDialogues] = useState<string[]>([]);
   const [currentResultDialogueIndex, setCurrentResultDialogueIndex] = useState(0);
   const [isResultTextComplete, setIsResultTextComplete] = useState(false);
+  const [isChoicePromptAnimating, setIsChoicePromptAnimating] = useState(false);
   
   // Game End State
   const [gameEndDialogues, setGameEndDialogues] = useState<string[]>([]);
@@ -112,12 +113,26 @@ export default function TableScreen() {
   useEffect(() => {
     if (gamePhase !== 'intro') return;
     
-    // Si ya terminamos todos los diálogos, pasar a choices
+    // Si ya terminamos todos los diálogos, pasar a choices con animación
     if (currentDialogueIndex >= introDialogues.length) {
-      setDisplayText(choicePrompt);
       setGamePhase('choices');
-      setShowChoices(true);
-      return;
+      setIsChoicePromptAnimating(true);
+      setDisplayText('');
+      
+      // Animación del texto de selección
+      let choiceIndex = 0;
+      const choiceInterval = setInterval(() => {
+        if (choiceIndex < choicePrompt.length) {
+          setDisplayText(choicePrompt.slice(0, choiceIndex + 1));
+          choiceIndex++;
+        } else {
+          clearInterval(choiceInterval);
+          setIsChoicePromptAnimating(false);
+          setShowChoices(true);
+        }
+      }, 50);
+      
+      return () => clearInterval(choiceInterval);
     }
     
     setDisplayText('');
@@ -142,10 +157,23 @@ export default function TableScreen() {
           if (currentDialogueIndex < introDialogues.length - 1) {
             setCurrentDialogueIndex(prev => prev + 1);
           } else {
-            // Si es el último diálogo, pasar directamente a choices
-            setDisplayText(choicePrompt);
+            // Si es el último diálogo, pasar directamente a choices con animación
             setGamePhase('choices');
-            setShowChoices(true);
+            setIsChoicePromptAnimating(true);
+            setDisplayText('');
+            
+            // Animación del texto de selección
+            let choiceIndex = 0;
+            const choiceInterval = setInterval(() => {
+              if (choiceIndex < choicePrompt.length) {
+                setDisplayText(choicePrompt.slice(0, choiceIndex + 1));
+                choiceIndex++;
+              } else {
+                clearInterval(choiceInterval);
+                setIsChoicePromptAnimating(false);
+                setShowChoices(true);
+              }
+            }, 50);
           }
         }, 2000);
       }
@@ -178,10 +206,23 @@ export default function TableScreen() {
         if (currentDialogueIndex < introDialogues.length - 1) {
           setCurrentDialogueIndex(prev => prev + 1);
         } else {
-          // Si es el último diálogo, pasar a choices
-          setDisplayText(choicePrompt);
+          // Si es el último diálogo, pasar a choices con animación
           setGamePhase('choices');
-          setShowChoices(true);
+          setIsChoicePromptAnimating(true);
+          setDisplayText('');
+          
+          // Animación del texto de selección
+          let choiceIndex = 0;
+          const choiceInterval = setInterval(() => {
+            if (choiceIndex < choicePrompt.length) {
+              setDisplayText(choicePrompt.slice(0, choiceIndex + 1));
+              choiceIndex++;
+            } else {
+              clearInterval(choiceInterval);
+              setIsChoicePromptAnimating(false);
+              setShowChoices(true);
+            }
+          }, 50);
         }
       }
     } else if (gamePhase === 'result-dialogues') {
@@ -385,17 +426,33 @@ export default function TableScreen() {
           gameResult.current = null;
           setIsGameEnding(false); // Reset flag
         } else {
-          // Si no terminó, volver a choices
-          setDisplayText(choicePrompt);
+          // Si no terminó, volver a choices con animación
           setGamePhase('choices');
-          setShowChoices(true);
+          setIsChoicePromptAnimating(true);
+          setDisplayText('');
+          setIsResultTextComplete(false);
+          
+          // Animación del texto de selección
+          let choiceIndex = 0;
+          const choiceInterval = setInterval(() => {
+            if (choiceIndex < choicePrompt.length) {
+              setDisplayText(choicePrompt.slice(0, choiceIndex + 1));
+              choiceIndex++;
+            } else {
+              clearInterval(choiceInterval);
+              setIsChoicePromptAnimating(false);
+              setIsResultTextComplete(true);
+              setShowChoices(true);
+            }
+          }, 50);
+          
           setSelectedChoice(null);
           setAnimationComplete(false);
           setCurrentResultDialogueIndex(0);
           setResultDialogues([]);
           gameResult.current = null;
         }
-      }, 2000);
+      }, 500); // Reducido de 2000ms a 500ms
       return () => clearTimeout(restoreTimer);
     }
     
@@ -419,7 +476,7 @@ export default function TableScreen() {
             // Si es el último diálogo, incrementar índice para disparar la transición
             setCurrentResultDialogueIndex(prev => prev + 1);
           }
-        }, 5000);
+        }, 2000); // Reducido de 5000ms a 2000ms
       }
     }, 50);
 
@@ -515,7 +572,8 @@ export default function TableScreen() {
           {displayText}
           {((gamePhase === 'intro' && !isTextComplete) || 
             (gamePhase === 'result-dialogues' && !isResultTextComplete) ||
-            (gamePhase === 'game-ended' && !isGameEndTextComplete)) && (
+            (gamePhase === 'game-ended' && !isGameEndTextComplete) ||
+            (gamePhase === 'choices' && isChoicePromptAnimating)) && (
             <span className="cursor">|</span>
           )}
         </div>
