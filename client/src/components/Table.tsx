@@ -15,11 +15,16 @@ export default function TableScreen() {
   const [showChoices, setShowChoices] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [gameResult, setGameResult] = useState<{
+  const [showResultDialogues, setShowResultDialogues] = useState(false);
+  const [currentResultDialogueIndex, setCurrentResultDialogueIndex] = useState(0);
+  const [isResultTextComplete, setIsResultTextComplete] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
+  const gameResult = useRef<{
     playerChoice: number;
     tomieChoice: number;
     winner: 'DRAW' | 'PLAYER_WINS' | 'TOMIE_WINS';
   } | null>(null);
+  const [resultDialogues, setResultDialogues] = useState<string[]>([]);
   const tableRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -216,12 +221,41 @@ export default function TableScreen() {
             }
           };
 
-          setGameResult({
+          gameResult.current = {
             playerChoice: getChoiceNumber(resultEvent.data.player_choice),
             tomieChoice: getChoiceNumber(resultEvent.data.tomie_choice),
             winner: resultEvent.data.result
-          });
+          };
           setShowResult(true);
+          
+          // Configurar diálogos basados en el resultado
+          const dialoguesByResult = {
+            'DRAW': [
+              "Tomie: A draw? How interesting... This means we're evenly matched.",
+              "Tomie: But don't think this is over. The real game has just begun."
+            ],
+            'PLAYER_WINS': [
+              "Tomie: You won this round...",
+              "Tomie: But remember, winning doesn't always mean you're safe. Sometimes victory comes with a price."
+            ],
+            'TOMIE_WINS': [
+              "Tomie: I win this round.",
+              "Tomie: You lose a life, but don't worry... there's still more to come. The game isn't over yet."
+            ]
+          };
+          
+          setResultDialogues(dialoguesByResult[gameResult.current.winner]);
+          
+          // Marcar que la animación está completa después de 1.8 segundos
+          setTimeout(() => {
+            setAnimationComplete(true);
+          }, 1800);
+          
+          // Después de 4.5 segundos (tiempo de standby para ver las manos), mostrar diálogos
+          setTimeout(() => {
+            setShowResultDialogues(true);
+            setCurrentResultDialogueIndex(0);
+          }, 4500);
         }
       }
     } catch (err) {
@@ -233,11 +267,65 @@ export default function TableScreen() {
   // Calcular transformaciones basadas en mouse (parallax effect)
   const bgX = mousePosition.x * 15;
   const bgY = mousePosition.y * 15;
+  const handPlayerX = mousePosition.x * 20;
+  const handPlayerY = mousePosition.y * 20;
+  const handTomieX = mousePosition.x * 20;
+  const handTomieY = mousePosition.y * 20;
+
+  // Efecto para los diálogos de resultado
+  useEffect(() => {
+    if (!showResultDialogues || currentResultDialogueIndex >= resultDialogues.length) {
+      // Cuando terminan todos los diálogos de resultado, restaurar todo y mostrar botones
+      if (showResultDialogues && currentResultDialogueIndex >= resultDialogues.length) {
+        const restoreTimeout = setTimeout(() => {
+          setShowResult(false);
+          setShowResultDialogues(false);
+          setCurrentResultDialogueIndex(0);
+          setResultDialogues([]);
+          setSelectedChoice(null);
+          setAnimationComplete(false);
+          gameResult.current = null;
+          // Volver a mostrar los botones de selección
+          setShowChoices(true);
+        }, 3000);
+        return () => clearTimeout(restoreTimeout);
+      }
+      return;
+    }
+    
+    setDisplayText('');
+    setIsResultTextComplete(false);
+    const currentDialogue = resultDialogues[currentResultDialogueIndex];
+    let currentIndex = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const interval = setInterval(() => {
+      if (currentIndex < currentDialogue.length) {
+        setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(interval);
+        setIsResultTextComplete(true);
+        timeoutId = setTimeout(() => {
+          if (currentResultDialogueIndex < resultDialogues.length - 1) {
+            setCurrentResultDialogueIndex(prev => prev + 1);
+          }
+        }, 5000);
+      }
+    }, 50);
+
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [currentResultDialogueIndex, showResultDialogues, resultDialogues]);
 
   return (
     <div ref={tableRef} className="table-screen">
       <div 
-        className={`table-background ${isLoaded ? 'fade-in' : ''}`}
+        className={`table-background ${isLoaded ? 'fade-in' : ''} ${showResult && !showResultDialogues ? 'darkened' : ''}`}
         style={{
           transform: `translate(calc(-50% + ${bgX}px), calc(-50% + ${bgY}px)) scale(1.08)`,
         }}
@@ -253,12 +341,33 @@ export default function TableScreen() {
 
       <div 
         className={`game-text-box ${isLoaded ? 'fade-in-delay-2' : ''}`}
-        onClick={handleClick}
-        style={{ cursor: currentDialogueIndex < dialogues.length ? 'pointer' : 'default' }}
+        onClick={() => {
+          if (showResultDialogues) {
+            // Manejar clicks en diálogos de resultado
+            if (!isResultTextComplete && resultDialogues[currentResultDialogueIndex]) {
+              setDisplayText(resultDialogues[currentResultDialogueIndex]);
+              setIsResultTextComplete(true);
+              setTimeout(() => {
+                if (currentResultDialogueIndex < resultDialogues.length - 1) {
+                  setCurrentResultDialogueIndex(prev => prev + 1);
+                }
+              }, 3000);
+            } else if (isResultTextComplete) {
+              if (currentResultDialogueIndex < resultDialogues.length - 1) {
+                setCurrentResultDialogueIndex(prev => prev + 1);
+              }
+            }
+          } else {
+            handleClick();
+          }
+        }}
+        style={{ cursor: (showResultDialogues || currentDialogueIndex < dialogues.length) ? 'pointer' : 'default' }}
       >
         <div className="game-text-content">
           {displayText}
-          <span className="cursor">|</span>
+          {(!showResultDialogues || (showResultDialogues && !isResultTextComplete)) && (
+            <span className="cursor">|</span>
+          )}
         </div>
       </div>
 
@@ -300,23 +409,33 @@ export default function TableScreen() {
         </div>
       )}
 
-      {showResult && gameResult && (
+      {showResult && gameResult.current && !showResultDialogues && (
         <div className="result-animation">
-          {/* Mano del jugador desde la izquierda */}
-          <div className="result-hand result-hand-player">
-            <img src={`/backgrounds/man_${gameResult.playerChoice}.png`} alt="Player hand" />
-          </div>
+            {/* Mano del jugador desde la izquierda */}
+            <div 
+              className="result-hand result-hand-player"
+              style={animationComplete ? {
+                transform: `translate(calc(15% + ${handPlayerX}px), calc(0px + ${handPlayerY}px))`,
+              } : {}}
+            >
+              <img src={`/backgrounds/man_${gameResult.current.playerChoice}.png`} alt="Player hand" />
+            </div>
 
-          {/* Mano de Tomie desde la derecha */}
-          <div className="result-hand result-hand-tomie">
-            <img src={`/backgrounds/woman_${gameResult.tomieChoice}.png`} alt="Tomie hand" />
-          </div>
+            {/* Mano de Tomie desde la derecha */}
+            <div 
+              className="result-hand result-hand-tomie"
+              style={animationComplete ? {
+                transform: `translate(calc(-50% + ${handTomieX}px), calc(-50% + ${handTomieY}px)) rotate(180deg)`,
+              } : {}}
+            >
+              <img src={`/backgrounds/woman_${gameResult.current.tomieChoice}.png`} alt="Tomie hand" />
+            </div>
 
           {/* Texto del resultado */}
           <div className="result-text">
-            {gameResult.winner === 'DRAW' && 'DRAW!'}
-            {gameResult.winner === 'PLAYER_WINS' && 'YOU WIN!'}
-            {gameResult.winner === 'TOMIE_WINS' && 'TOMIE WINS!'}
+            {gameResult.current.winner === 'DRAW' && 'DRAW!'}
+            {gameResult.current.winner === 'PLAYER_WINS' && 'YOU WIN!'}
+            {gameResult.current.winner === 'TOMIE_WINS' && 'TOMIE WINS!'}
           </div>
         </div>
       )}

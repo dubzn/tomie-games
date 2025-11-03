@@ -183,6 +183,11 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  transition: filter 0.8s ease-in-out;
+}
+
+.table-background.darkened img {
+  filter: brightness(0.6);
 }
 
 .game-background {
@@ -531,6 +536,9 @@
   max-width: 40vw;
   object-fit: contain;
   display: block;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.5)) 
+          drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+  will-change: transform;
 }
 
 /* Mano del player - desde abajo, a la izquierda del cuadro de texto */
@@ -542,12 +550,13 @@
   z-index: 9; /* Por debajo del cuadro de diálogo que tiene z-index 10 */
 }
 
-/* Mano de Tomie - en el centro de la pantalla */
+/* Mano de Tomie - entra desde arriba a la derecha */
 .result-hand-tomie {
   top: 25%;
   left: 50%;
+  right: auto;
   transform: translate(-50%, -50%) rotate(180deg);
-  animation: fade-in-center 1s ease-out forwards;
+  animation: slide-in-from-top-right 1s ease-out forwards;
   transform-origin: center center;
 }
 
@@ -564,15 +573,28 @@
   }
 }
 
-@keyframes fade-in-center {
+@keyframes slide-in-from-top-right {
   from {
+    top: -100%;
+    left: 150%;
     opacity: 0;
     transform: translate(-50%, -50%) rotate(180deg) scale(0.8);
   }
   to {
+    top: 25%;
+    left: 50%;
     opacity: 1;
     transform: translate(-50%, -50%) rotate(180deg) scale(1);
   }
+}
+
+/* Cuando las manos están visibles, permitir parallax */
+.result-hand-player {
+  will-change: transform;
+}
+
+.result-hand-tomie {
+  will-change: transform;
 }
 
 /* Responsive adjustments */

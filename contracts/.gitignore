@@ -1,3 +1,4 @@
 target
 dojo_mainnet.toml
 Scarb.lock
+.DS_Store
