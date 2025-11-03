@@ -457,7 +457,7 @@ export default function TableScreen() {
           // RESULT DIALOGUES
           const dialoguesByResult = {
             'DRAW': [
-              "Tomie A draw... How curious. It seems we're evenly cursed.",
+              "Tomie: A draw... How curious. It seems we're evenly cursed.",
             ],
             'PLAYER_WINS': [
               "Tomie: You won this round... but don't get too confident.",

@@ -263,7 +263,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
         
         const voiceAudio = new Audio(audioPath);
-        voiceAudio.volume = 0.25;
+        voiceAudio.volume = 0.40;
         currentVoiceAudioRef.current = voiceAudio;
         let resolved = false;
         
