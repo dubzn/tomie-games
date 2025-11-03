@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import '../App.css';
 import '../assets/font.css';
 import { useActions } from '../hooks/useActions';
+import { useGameData } from '../hooks/useGameData';
 
 type GamePhase = 'intro' | 'choices' | 'result-animation' | 'result-dialogues' | 'game-ended';
 
@@ -10,6 +11,8 @@ export default function TableScreen() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { play, loading: actionLoading, error: actionError } = useActions();
+  const gameIdNumber = gameId ? parseInt(gameId, 10) : undefined;
+  const { game, refetch: refetchGameData } = useGameData(gameIdNumber);
   
   // UI State
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -268,6 +271,9 @@ export default function TableScreen() {
       if (result && result.parsed_events) {
         console.log('Play result:', result);
         
+        // Refetch game data after play
+        refetchGameData();
+        
         // Check for GameEndedEvent first
         const gameEndEvent = result.parsed_events.find(
           (event) => event.key === 'GameEndedEvent'
@@ -458,6 +464,25 @@ export default function TableScreen() {
       {gamePhase !== 'result-animation' && (
         <div className={`table-face-popup ${isLoaded ? 'fade-in-delay' : ''}`}>
           <img src="/backgrounds/face_2.png" alt="Face" />
+        </div>
+      )}
+
+      {/* Game Status Box */}
+      {game && (
+        <div className={`game-status-box ${isLoaded ? 'fade-in-delay' : ''}`}>
+          <div className="game-status-content">
+            <div className="game-status-title">Jankenpon</div>
+            <div className="game-status-info">
+              <div className="game-status-item">
+                <span className="game-status-label">Player:</span>
+                <span className="game-status-value">{Number(game.lives)}</span>
+              </div>
+              <div className="game-status-item">
+                <span className="game-status-label">Tomie:</span>
+                <span className="game-status-value">{Number(game.tomie_lives)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
