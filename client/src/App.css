@@ -24,7 +24,7 @@
 
 .app-container:has(.home) {
   background-image: url('/backgrounds/bg.jpg');
-  background-position: center center;
+  background-position: center bottom;
   background-repeat: no-repeat;
   background-attachment: fixed;
   display: flex;
@@ -34,6 +34,7 @@
   height: 100vh;
   max-height: 100vh;
   padding: 0;
+  margin: 0;
 }
 
 .home {
@@ -42,6 +43,8 @@
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .home-menu-container {
