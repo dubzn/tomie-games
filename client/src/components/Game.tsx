@@ -35,7 +35,7 @@ export default function GameScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsWaiting(true);
-    }, 10000); 
+    }, 15000); 
 
     return () => clearTimeout(timer);
   }, []);
@@ -149,7 +149,7 @@ export default function GameScreen() {
         <div className={`game-action-button ${showButton ? 'fade-in-delay-2' : ''}`}>
           <button 
             onClick={handleNewGame} 
-            disabled={actionLoading}
+            disabled={actionLoading || isFadingToTable }
             className="game-button"
           >
             {actionLoading || isFadingToTable ? 'Loading...' : 'uhm.. sure?'}

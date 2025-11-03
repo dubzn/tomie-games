@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from '@starknet-react/core';
+import { useAudio } from '../hooks/useAudio';
 import '../App.css';
 import '../assets/font.css';
 
 export default function DefeatScreen() {
   const navigate = useNavigate();
   const { disconnect } = useDisconnect();
+  const { restartMusic } = useAudio();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [displayText, setDisplayText] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -60,6 +62,7 @@ export default function DefeatScreen() {
           setIsFadingOut(true);
           setTimeout(() => {
             disconnect();
+            restartMusic(); // Reiniciar la música antes de navegar
             navigate('/');
           }, 2000); // Tiempo para el fade a negro
         }, 3000);
@@ -67,7 +70,7 @@ export default function DefeatScreen() {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [navigate, disconnect]);
+  }, [navigate, disconnect, restartMusic]);
 
 
   // Calcular transformaciones basadas en mouse (parallax effect)

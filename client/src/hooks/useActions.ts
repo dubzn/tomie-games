@@ -114,9 +114,11 @@ export const useActions = () => {
             let result = parseResult(toNumber(event.data[5]));
             parsed_events.push({ key: "YanKenPonResultEvent", data: { game_id: toNumber(event.data[1]), player_choice: parseChoice(toNumber(event.data[3])), tomie_choice: parseChoice(toNumber(event.data[4])), result: result } });
           } else if (event.keys[1] === getEventKey("TomieExpressionEvent")) {
-            parsed_events.push({ key: "TomieExpressionEvent", data: { game_id: toNumber(event.data[1]), expression_id: toNumber(event.data[2]) } });
+            console.log("[TomieExpressionEvent] - Event: ", event);
+            parsed_events.push({ key: "TomieExpressionEvent", data: { game_id: toNumber(event.data[1]), expression_id: toNumber(event.data[3]) } });
           } else if (event.keys[1] === getEventKey("GameEndedEvent")) {
-            parsed_events.push({ key: "GameEndedEvent", data: { game_id: toNumber(event.data[1]), player_won: event.data[3] } });
+            console.log("[GameEndedEvent] - Event: ", event);
+            parsed_events.push({ key: "GameEndedEvent", data: { game_id: toNumber(event.data[1]), player_won: toNumber(event.data[4]) === 1 } });
           } else {}
         }
         return { transaction_hash, parsed_events };

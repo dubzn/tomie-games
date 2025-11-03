@@ -55,6 +55,11 @@ export default function TableScreen() {
   const [playerWon, setPlayerWon] = useState<boolean | null>(null);
   const [isGameEnding, setIsGameEnding] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  
+  // Tomie Expression Popup State
+  const [showTomieExpressionPopup, setShowTomieExpressionPopup] = useState(false);
+  const [tomieExpressionFadingOut, setTomieExpressionFadingOut] = useState(false);
+  const [tomieExpressionFace, setTomieExpressionFace] = useState<string>('');
 
   // Función para reproducir un audio aleatorio
   const playRandomSound = () => {
@@ -322,9 +327,8 @@ export default function TableScreen() {
         
         if (gameEndEvent && gameEndEvent.data) {
           // Parse player_won from Starknet event (could be boolean, string, or number)
-          const wonValue = gameEndEvent.data.player_won;
-          const won = wonValue === true || wonValue === 1 || wonValue === '1' || String(wonValue).toLowerCase() === 'true';
-          setPlayerWon(won);
+          const won = gameEndEvent.data.player_won === true;
+          setPlayerWon(gameEndEvent.data.player_won);
           setIsGameEnding(true);
           
           const endDialogues = won
@@ -336,6 +340,29 @@ export default function TableScreen() {
               ];
           
           setGameEndDialogues(endDialogues);
+        }
+        
+        // Handle TomieExpressionEvent (face popup)
+        const expressionEvent = result.parsed_events.find(
+          (event) => event.key === 'TomieExpressionEvent'
+        );
+        
+        if (expressionEvent && expressionEvent.data) {
+          const expressionId = expressionEvent.data.expression_id;
+          // expression_id 1 = face_3.png, expression_id 2 = face_4.png
+          const faceImage = expressionId === 1 ? 'face_3.png' : 'face_4.png';
+          setTomieExpressionFace(faceImage);
+          setShowTomieExpressionPopup(true);
+          setTomieExpressionFadingOut(false);
+          
+          // Auto-hide after 3 seconds with fade-out
+          setTimeout(() => {
+            setTomieExpressionFadingOut(true);
+            setTimeout(() => {
+              setShowTomieExpressionPopup(false);
+              setTomieExpressionFace('');
+            }, 500);
+          }, 3000);
         }
         
         // Handle YanKenPonResultEvent (round result)
@@ -536,9 +563,15 @@ export default function TableScreen() {
         <img src="/backgrounds/table_bg.png" alt="Table background" />
       </div>
       
-      {gamePhase !== 'result-animation' && (
+      {gamePhase !== 'result-animation' && !showTomieExpressionPopup && (
         <div className={`table-face-popup ${isLoaded ? 'fade-in-delay' : ''}`}>
           <img src="/backgrounds/face_2.png" alt="Face" />
+        </div>
+      )}
+      
+      {showTomieExpressionPopup && (
+        <div className={`face-popup ${tomieExpressionFadingOut ? 'fade-out-popup' : 'fade-in-popup'}`}>
+          <img src={`/backgrounds/${tomieExpressionFace}`} alt="Tomie Expression" />
         </div>
       )}
 
