@@ -282,11 +282,9 @@ export default function TableScreen() {
           const endDialogues = won
             ? [
                 "Tomie: You've won... this time.",
-                "Tomie: But remember, victory in this game comes with consequences you cannot escape."
               ]
             : [
                 "Tomie: You've lost... as expected.",
-                "Tomie: The game is over, but this is just the beginning of your story."
               ];
           
           setGameEndDialogues(endDialogues);
@@ -320,15 +318,12 @@ export default function TableScreen() {
           const dialoguesByResult = {
             'DRAW': [
               "Tomie: A draw? How interesting... This means we're evenly matched.",
-              "Tomie: But don't think this is over. The real game has just begun."
             ],
             'PLAYER_WINS': [
               "Tomie: You won this round...",
-              "Tomie: But remember, winning doesn't always mean you're safe. Sometimes victory comes with a price."
             ],
             'TOMIE_WINS': [
               "Tomie: I win this round.",
-              "Tomie: You lose a life, but don't worry... there's still more to come. The game isn't over yet."
             ]
           };
           
