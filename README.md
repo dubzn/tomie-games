@@ -1,8 +1,14 @@
 # TOMIE GAMES
 
-### Submission Track
-**Full Game**
+### Submission Track: Full Game
+<img width="2560" height="1321" alt="preview" src="https://github.com/user-attachments/assets/e8c24479-6ded-4b3a-9427-be791b55ce13" />
 
+
+## Links
+### - [Play demo here!](https://tomie-games.vercel.app/)
+### - [Gameplay video](https://www.youtube.com/watch?v=bah7IStmMq8)  
+### - [GitHub Repository](https://github.com/dubzn/tomie-games)
+---
 ### Overview
 
 **TOMIE GAMES** is a fully on-chain, narrative-driven *Rock, Paper, Scissors* experience built on **Starknet** with the **Dojo** framework.  
@@ -16,11 +22,6 @@ Face off against *Tomie* in a short but intense psychological battle of luck, eg
 - **Fully On-Chain:** Every action, choice, and result is stored transparently through Dojo models.  
 - **Cinematic Transitions:** Smooth fades and animated phases between rounds.  
 
-### Play the Demo  
-**[tomie-games.vercel.app](https://tomie-games.vercel.app/)**
-
-**Gameplay video:** [YouTube Link](https://www.youtube.com/watch?v=bah7IStmMq8)  
-**Source code:** [GitHub Repository](https://github.com/dubzn/tomie-games)
 
 ### How to Play
 
