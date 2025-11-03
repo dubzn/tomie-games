@@ -273,6 +273,8 @@
   font-weight: normal;
   text-align: left;
   width: 100%;
+  white-space: pre-wrap; /* Mantener saltos de línea y evitar parpadeos */
+  will-change: contents; /* Optimización de renderizado */
 }
 
 .game-text-content .cursor {

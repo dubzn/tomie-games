@@ -12,7 +12,7 @@ export default function TableScreen() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { play, loading: actionLoading, error: actionError } = useActions();
-  const { playVoice } = useAudio();
+  const { playVoice, stopVoice } = useAudio();
   const gameIdNumber = gameId ? parseInt(gameId, 10) : undefined;
   const { game, refetch: refetchGameData } = useGameData(gameIdNumber);
   
@@ -49,11 +49,15 @@ export default function TableScreen() {
   const [currentResultDialogueIndex, setCurrentResultDialogueIndex] = useState(0);
   const [isResultTextComplete, setIsResultTextComplete] = useState(false);
   const [isChoicePromptAnimating, setIsChoicePromptAnimating] = useState(false);
+  const resultDialogueIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const resultDialogueTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Game End State
   const [gameEndDialogues, setGameEndDialogues] = useState<string[]>([]);
   const [currentGameEndDialogueIndex, setCurrentGameEndDialogueIndex] = useState(0);
   const [isGameEndTextComplete, setIsGameEndTextComplete] = useState(false);
+  const gameEndDialogueIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const gameEndDialogueTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [playerWon, setPlayerWon] = useState<boolean | null>(null);
   const [isGameEnding, setIsGameEnding] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -84,11 +88,11 @@ export default function TableScreen() {
   };
   
   const introDialogues = [
-    "Tomie:\n We'll play rock, paper, scissors. Simple enough, right?",
-    "Tomie:\n But this isn't just any game... Let's see how deep your luck really goes."
+    "Tomie: We'll play rock, paper, scissors. Simple enough, right?",
+    "Tomie: But this isn't just any game... Let's see how deep your luck really goes."
   ];
   
-  const choicePrompt = "Tomie: What do you choose?";
+  const choicePrompt = "What do you choose?";
   
   useEffect(() => {
     setIsLoaded(true);
@@ -142,52 +146,100 @@ export default function TableScreen() {
       return () => clearInterval(choiceInterval);
     }
     
+    // Limpiar cualquier intervalo/timeout anterior
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    
+    // Inicializar el texto vacío ANTES de cargar el audio para evitar parpadeos
     setDisplayText('');
     setIsTextComplete(false);
     const currentDialogue = introDialogues[currentDialogueIndex];
     // Reproducir audio de voz según el índice del diálogo
     const audioPath = currentDialogueIndex === 0 ? '/music/introDialogues_1.mp3' : '/music/introDialogues_2.mp3';
-    playVoice(audioPath);
     const currentIndexRef = { value: 0 };
+    let isAnimationRunning = false;
+    let calculatedIntervalMs = 50; // Default
     
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    
-    intervalRef.current = setInterval(() => {
-      if (currentIndexRef.value < currentDialogue.length) {
-        setDisplayText(currentDialogue.slice(0, currentIndexRef.value + 1));
-        currentIndexRef.value++;
-      } else {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        setIsTextComplete(true);
-        timeoutRef.current = setTimeout(() => {
-          if (currentDialogueIndex < introDialogues.length - 1) {
-            setCurrentDialogueIndex(prev => prev + 1);
-          } else {
-            // Si es el último diálogo, pasar directamente a choices con animación
-            setGamePhase('choices');
-            setIsChoicePromptAnimating(true);
-            setDisplayText('');
-            
-            // Animación del texto de selección
-            let choiceIndex = 0;
-            const choiceInterval = setInterval(() => {
-              if (choiceIndex < choicePrompt.length) {
-                setDisplayText(choicePrompt.slice(0, choiceIndex + 1));
-                choiceIndex++;
-              } else {
-                clearInterval(choiceInterval);
-                setIsChoicePromptAnimating(false);
-                setShowChoices(true);
-              }
-            }, 50);
-          }
-        }, 2000);
+    const startTextAnimation = () => {
+      if (isAnimationRunning) return;
+      isAnimationRunning = true;
+      
+      // Limpiar intervalo anterior si existe
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    }, 50);
+      
+      intervalRef.current = setInterval(() => {
+        if (currentIndexRef.value < currentDialogue.length) {
+          setDisplayText(currentDialogue.slice(0, currentIndexRef.value + 1));
+          currentIndexRef.value++;
+        } else {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          isAnimationRunning = false;
+          setIsTextComplete(true);
+          // Calcular tiempo de espera basado en la duración del audio o velocidad usada
+          const estimatedDuration = calculatedIntervalMs * currentDialogue.length;
+          const waitTime = estimatedDuration > 0 ? estimatedDuration + 500 : 2000;
+          
+          timeoutRef.current = setTimeout(() => {
+            if (currentDialogueIndex < introDialogues.length - 1) {
+              setCurrentDialogueIndex(prev => prev + 1);
+            } else {
+              // Si es el último diálogo, pasar directamente a choices con animación
+              setGamePhase('choices');
+              setIsChoicePromptAnimating(true);
+              setDisplayText('');
+              
+              // Animación del texto de selección
+              let choiceIndex = 0;
+              const choiceInterval = setInterval(() => {
+                if (choiceIndex < choicePrompt.length) {
+                  setDisplayText(choicePrompt.slice(0, choiceIndex + 1));
+                  choiceIndex++;
+                } else {
+                  clearInterval(choiceInterval);
+                  setIsChoicePromptAnimating(false);
+                  setShowChoices(true);
+                }
+              }, 50);
+            }
+          }, waitTime);
+        }
+      }, calculatedIntervalMs);
+    };
+    
+    // Iniciar la animación inmediatamente con velocidad default (esto asegura que el texto aparezca)
+    startTextAnimation();
+    
+    // Ajustar velocidad cuando el audio cargue
+    playVoice(audioPath).then((duration) => {
+      if (duration > 0 && currentIndexRef.value < currentDialogue.length) {
+        // Calcular velocidad de escritura basada en la duración del audio
+        const charsPerSecond = currentDialogue.length / duration;
+        const newIntervalMs = Math.max(30, Math.min(100, 1000 / charsPerSecond)); // Entre 30ms y 100ms
+        
+        // Solo actualizar si la velocidad es significativamente diferente (más de 10ms de diferencia)
+        if (Math.abs(newIntervalMs - calculatedIntervalMs) > 10) {
+          calculatedIntervalMs = newIntervalMs;
+          
+          // Si hay un intervalo corriendo, detenerlo y reiniciar con nueva velocidad
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+            isAnimationRunning = false;
+            // Reiniciar con la nueva velocidad (mantiene el progreso actual en currentIndexRef)
+            startTextAnimation();
+          }
+        }
+      }
+    }).catch(err => {
+      console.error('Error reproduciendo voz:', err);
+      // Continuar con la velocidad default que ya está corriendo
+    });
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -200,6 +252,7 @@ export default function TableScreen() {
       const currentDialogue = introDialogues[currentDialogueIndex];
       if (!isTextComplete) {
         if (intervalRef.current) clearInterval(intervalRef.current);
+        stopVoice(); // Detener el audio cuando se acelera el diálogo
         setDisplayText(currentDialogue);
         setIsTextComplete(true);
         timeoutRef.current = setTimeout(() => {
@@ -244,17 +297,21 @@ export default function TableScreen() {
   
   const handleResultDialogueClick = () => {
     if (!isResultTextComplete && resultDialogues[currentResultDialogueIndex]) {
+      // Limpiar intervals y timeouts
+      if (resultDialogueIntervalRef.current) clearInterval(resultDialogueIntervalRef.current);
+      if (resultDialogueTimeoutRef.current) clearTimeout(resultDialogueTimeoutRef.current);
+      stopVoice(); // Detener el audio cuando se acelera el diálogo
       setDisplayText(resultDialogues[currentResultDialogueIndex]);
       setIsResultTextComplete(true);
-      const timeout = setTimeout(() => {
+      resultDialogueTimeoutRef.current = setTimeout(() => {
         if (currentResultDialogueIndex < resultDialogues.length - 1) {
           setCurrentResultDialogueIndex(prev => prev + 1);
         } else {
           setCurrentResultDialogueIndex(prev => prev + 1);
         }
       }, 2000);
-      return () => clearTimeout(timeout);
     } else if (isResultTextComplete) {
+      if (resultDialogueTimeoutRef.current) clearTimeout(resultDialogueTimeoutRef.current);
       if (currentResultDialogueIndex < resultDialogues.length - 1) {
         setCurrentResultDialogueIndex(prev => prev + 1);
       } else {
@@ -266,9 +323,13 @@ export default function TableScreen() {
   
   const handleGameEndDialogueClick = () => {
     if (!isGameEndTextComplete && gameEndDialogues[currentGameEndDialogueIndex]) {
+      // Limpiar intervals y timeouts
+      if (gameEndDialogueIntervalRef.current) clearInterval(gameEndDialogueIntervalRef.current);
+      if (gameEndDialogueTimeoutRef.current) clearTimeout(gameEndDialogueTimeoutRef.current);
+      stopVoice(); // Detener el audio cuando se acelera el diálogo
       setDisplayText(gameEndDialogues[currentGameEndDialogueIndex]);
       setIsGameEndTextComplete(true);
-      const timeout = setTimeout(() => {
+      gameEndDialogueTimeoutRef.current = setTimeout(() => {
         if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
           setCurrentGameEndDialogueIndex(prev => prev + 1);
         } else {
@@ -279,8 +340,8 @@ export default function TableScreen() {
           }, 2000);
         }
       }, 2000);
-      return () => clearTimeout(timeout);
     } else if (isGameEndTextComplete) {
+      if (gameEndDialogueTimeoutRef.current) clearTimeout(gameEndDialogueTimeoutRef.current);
       if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
         setCurrentGameEndDialogueIndex(prev => prev + 1);
       } else {
@@ -337,14 +398,14 @@ export default function TableScreen() {
           setIsGameEnding(true);
           
           const endDialogues = won
-          ? [ "Tomie:\n You've won... for now." ]
-          : [ "Tomie:\n You've lost... just as I expected." ];
+          ? [ "Tomie: You've won... for now." ]
+          : [ "Tomie: You've lost... just as I expected." ];
         
           setGameEndDialogues(endDialogues);
           
-          // Reproducir audio de fin de juego
+          // Guardar el audio de fin de juego para reproducirlo cuando se muestre el diálogo
           const gameEndAudio = won ? '/music/gameEndedPlayerWin.mp3' : '/music/gameEndedPlayerLose.mp3';
-          playVoice(gameEndAudio);
+          (window as any).__currentGameEndAudio__ = gameEndAudio;
         }
         
         // Handle TomieExpressionEvent (face popup)
@@ -396,13 +457,13 @@ export default function TableScreen() {
           // RESULT DIALOGUES
           const dialoguesByResult = {
             'DRAW': [
-              "Tomie:\n A draw... How curious. It seems we're evenly cursed.",
+              "Tomie A draw... How curious. It seems we're evenly cursed.",
             ],
             'PLAYER_WINS': [
-              "Tomie:\n You won this round... but don't get too confident.",
+              "Tomie: You won this round... but don't get too confident.",
               ],
             'TOMIE_WINS': [
-              "Tomie:\n I win this round. You're starting to shake… how adorable.",
+              "Tomie: I win this round. You're starting to shake… how adorable.",
             ],
           };
           
@@ -414,10 +475,8 @@ export default function TableScreen() {
           };
           
           setResultDialogues(dialoguesByResult[winner]);
-          // Reproducir audio de resultado con delay de 2 segundos para no pisarse con el sonido de jankenpon
-          setTimeout(() => {
-            playVoice(resultAudioMap[winner]);
-          }, 3000);
+          // Guardar el audio path para reproducirlo cuando se muestre el diálogo
+          (window as any).__currentResultAudio__ = resultAudioMap[winner];
           setGamePhase('result-animation');
           setShowChoices(false);
           
@@ -431,7 +490,7 @@ export default function TableScreen() {
             setIsResultTextComplete(false);
             // Refetch game data after animation to get updated state
             refetchGameData();
-          }, 4500);
+          }, 3000); // Reducido porque ahora el audio se reproduce con el diálogo
         } else {
           // Si no hay resultado pero sí hay GameEndedEvent, refetch igual
           if (gameEndEvent) {
@@ -506,31 +565,117 @@ export default function TableScreen() {
     setIsResultTextComplete(false);
     const currentDialogue = resultDialogues[currentResultDialogueIndex];
     let currentIndex = 0;
-    let timeoutId: NodeJS.Timeout | null = null;
     
-    const interval = setInterval(() => {
-      if (currentIndex < currentDialogue.length) {
-        setDisplayText(currentDialogue.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-        setIsResultTextComplete(true);
-        timeoutId = setTimeout(() => {
-          if (currentResultDialogueIndex < resultDialogues.length - 1) {
-            setCurrentResultDialogueIndex(prev => prev + 1);
+    // Limpiar refs anteriores
+    if (resultDialogueIntervalRef.current) clearInterval(resultDialogueIntervalRef.current);
+    if (resultDialogueTimeoutRef.current) clearTimeout(resultDialogueTimeoutRef.current);
+    
+    // Obtener el audio correspondiente (solo para el primer diálogo)
+    const audioPath = currentResultDialogueIndex === 0 && (window as any).__currentResultAudio__ 
+      ? (window as any).__currentResultAudio__ 
+      : null;
+    
+    // Si hay audio (solo para el primer diálogo de resultado), reproducirlo y sincronizar
+    if (audioPath) {
+      // Delay de 1 segundo para que termine la animación
+      setTimeout(() => {
+        playVoice(audioPath).then((duration) => {
+          if (duration > 0) {
+            const charsPerSecond = currentDialogue.length / duration;
+            const intervalMs = Math.max(30, Math.min(100, 1000 / charsPerSecond));
+            
+            resultDialogueIntervalRef.current = setInterval(() => {
+              if (currentIndex < currentDialogue.length) {
+                setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+                currentIndex++;
+              } else {
+                if (resultDialogueIntervalRef.current) {
+                  clearInterval(resultDialogueIntervalRef.current);
+                  resultDialogueIntervalRef.current = null;
+                }
+                setIsResultTextComplete(true);
+                resultDialogueTimeoutRef.current = setTimeout(() => {
+                  if (currentResultDialogueIndex < resultDialogues.length - 1) {
+                    setCurrentResultDialogueIndex(prev => prev + 1);
+                  } else {
+                    setCurrentResultDialogueIndex(prev => prev + 1);
+                  }
+                }, (duration * 1000) + 500);
+              }
+            }, intervalMs);
           } else {
-            // Si es el último diálogo, incrementar índice para disparar la transición
-            setCurrentResultDialogueIndex(prev => prev + 1);
+            // Fallback
+            resultDialogueIntervalRef.current = setInterval(() => {
+              if (currentIndex < currentDialogue.length) {
+                setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+                currentIndex++;
+              } else {
+                if (resultDialogueIntervalRef.current) {
+                  clearInterval(resultDialogueIntervalRef.current);
+                  resultDialogueIntervalRef.current = null;
+                }
+                setIsResultTextComplete(true);
+                resultDialogueTimeoutRef.current = setTimeout(() => {
+                  if (currentResultDialogueIndex < resultDialogues.length - 1) {
+                    setCurrentResultDialogueIndex(prev => prev + 1);
+                  } else {
+                    setCurrentResultDialogueIndex(prev => prev + 1);
+                  }
+                }, 2000);
+              }
+            }, 50);
           }
-        }, 2000); // Reducido de 5000ms a 2000ms
-      }
-    }, 50);
+        }).catch(err => {
+          console.error('Error reproduciendo voz:', err);
+          resultDialogueIntervalRef.current = setInterval(() => {
+            if (currentIndex < currentDialogue.length) {
+              setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+              currentIndex++;
+            } else {
+              if (resultDialogueIntervalRef.current) {
+                clearInterval(resultDialogueIntervalRef.current);
+                resultDialogueIntervalRef.current = null;
+              }
+              setIsResultTextComplete(true);
+              resultDialogueTimeoutRef.current = setTimeout(() => {
+                if (currentResultDialogueIndex < resultDialogues.length - 1) {
+                  setCurrentResultDialogueIndex(prev => prev + 1);
+                } else {
+                  setCurrentResultDialogueIndex(prev => prev + 1);
+                }
+              }, 2000);
+            }
+          }, 50);
+        });
+      }, 1000);
+    } else {
+      // Si no hay audio, usar velocidad estándar
+      resultDialogueIntervalRef.current = setInterval(() => {
+        if (currentIndex < currentDialogue.length) {
+          setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+          currentIndex++;
+        } else {
+          if (resultDialogueIntervalRef.current) {
+            clearInterval(resultDialogueIntervalRef.current);
+            resultDialogueIntervalRef.current = null;
+          }
+          setIsResultTextComplete(true);
+          resultDialogueTimeoutRef.current = setTimeout(() => {
+            if (currentResultDialogueIndex < resultDialogues.length - 1) {
+              setCurrentResultDialogueIndex(prev => prev + 1);
+            } else {
+              setCurrentResultDialogueIndex(prev => prev + 1);
+            }
+          }, 2000);
+        }
+      }, 50);
+    }
 
     return () => {
-      clearInterval(interval);
-      if (timeoutId) clearTimeout(timeoutId);
+      if (resultDialogueIntervalRef.current) clearInterval(resultDialogueIntervalRef.current);
+      if (resultDialogueTimeoutRef.current) clearTimeout(resultDialogueTimeoutRef.current);
     };
-  }, [currentResultDialogueIndex, gamePhase, resultDialogues, isGameEnding]);
+  }, [currentResultDialogueIndex, gamePhase, resultDialogues, isGameEnding, playVoice]);
   
   // Game End Dialogues Effect
   useEffect(() => {
@@ -543,33 +688,111 @@ export default function TableScreen() {
     const currentDialogue = gameEndDialogues[currentGameEndDialogueIndex];
     let currentIndex = 0;
     let timeoutId: NodeJS.Timeout | null = null;
+    let interval: NodeJS.Timeout | null = null;
     
-    const interval = setInterval(() => {
-      if (currentIndex < currentDialogue.length) {
-        setDisplayText(currentDialogue.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-        setIsGameEndTextComplete(true);
-        timeoutId = setTimeout(() => {
-          if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
-            setCurrentGameEndDialogueIndex(prev => prev + 1);
+    // Obtener el audio de fin de juego (solo para el primer diálogo)
+    const audioPath = currentGameEndDialogueIndex === 0 && (window as any).__currentGameEndAudio__ 
+      ? (window as any).__currentGameEndAudio__ 
+      : null;
+    
+    // Si hay audio, reproducirlo y sincronizar
+    if (audioPath) {
+      playVoice(audioPath).then((duration) => {
+        if (duration > 0) {
+          const charsPerSecond = currentDialogue.length / duration;
+          const intervalMs = Math.max(30, Math.min(100, 1000 / charsPerSecond));
+          
+          interval = setInterval(() => {
+            if (currentIndex < currentDialogue.length) {
+              setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+              currentIndex++;
+            } else {
+              if (interval) clearInterval(interval);
+              setIsGameEndTextComplete(true);
+              timeoutId = setTimeout(() => {
+                if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+                  setCurrentGameEndDialogueIndex(prev => prev + 1);
+                } else {
+                  setIsFadingOut(true);
+                  setTimeout(() => {
+                    navigate(playerWon ? '/victory' : '/defeat');
+                  }, 2000);
+                }
+              }, (duration * 1000) + 500);
+            }
+          }, intervalMs);
+        } else {
+          // Fallback
+          interval = setInterval(() => {
+            if (currentIndex < currentDialogue.length) {
+              setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+              currentIndex++;
+            } else {
+              if (interval) clearInterval(interval);
+              setIsGameEndTextComplete(true);
+              timeoutId = setTimeout(() => {
+                if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+                  setCurrentGameEndDialogueIndex(prev => prev + 1);
+                } else {
+                  setIsFadingOut(true);
+                  setTimeout(() => {
+                    navigate(playerWon ? '/victory' : '/defeat');
+                  }, 2000);
+                }
+              }, 3000);
+            }
+          }, 50);
+        }
+      }).catch(err => {
+        console.error('Error reproduciendo voz:', err);
+        interval = setInterval(() => {
+          if (currentIndex < currentDialogue.length) {
+            setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+            currentIndex++;
           } else {
-            // Activar fade a negro antes de redirigir
-            setIsFadingOut(true);
-            setTimeout(() => {
-              navigate(playerWon ? '/victory' : '/defeat');
-            }, 2000);
+            if (interval) clearInterval(interval);
+            setIsGameEndTextComplete(true);
+            timeoutId = setTimeout(() => {
+              if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+                setCurrentGameEndDialogueIndex(prev => prev + 1);
+              } else {
+                setIsFadingOut(true);
+                setTimeout(() => {
+                  navigate(playerWon ? '/victory' : '/defeat');
+                }, 2000);
+              }
+            }, 3000);
           }
-        }, 3000);
-      }
-    }, 50);
+        }, 50);
+      });
+    } else {
+      // Si no hay audio, usar velocidad estándar
+      interval = setInterval(() => {
+        if (currentIndex < currentDialogue.length) {
+          setDisplayText(currentDialogue.slice(0, currentIndex + 1));
+          currentIndex++;
+        } else {
+          if (interval) clearInterval(interval);
+          setIsGameEndTextComplete(true);
+          timeoutId = setTimeout(() => {
+            if (currentGameEndDialogueIndex < gameEndDialogues.length - 1) {
+              setCurrentGameEndDialogueIndex(prev => prev + 1);
+            } else {
+              setIsFadingOut(true);
+              setTimeout(() => {
+                navigate(playerWon ? '/victory' : '/defeat');
+              }, 2000);
+            }
+          }, 3000);
+        }
+      }, 50);
+    }
 
     return () => {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentGameEndDialogueIndex, gamePhase, gameEndDialogues, playerWon, navigate]);
+  }, [currentGameEndDialogueIndex, gamePhase, gameEndDialogues, playerWon, navigate, playVoice]);
 
   return (
     <div ref={tableRef} className="table-screen">

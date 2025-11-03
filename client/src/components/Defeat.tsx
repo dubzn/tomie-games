@@ -16,7 +16,7 @@ export default function DefeatScreen() {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const defeatRef = useRef<HTMLDivElement>(null);
   
-  const defeatText = "Tomie:\n You’re not the first to lose here... and you won’t be leaving. Ever.";
+  const defeatText = "Tomie: You’re not the first to lose here... and you won’t be leaving. Ever.";
 
   useEffect(() => {
     setIsLoaded(true);
@@ -49,30 +49,70 @@ export default function DefeatScreen() {
     setDisplayText('');
     setIsTextComplete(false);
     let currentIndex = 0;
+    let interval: NodeJS.Timeout | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    let calculatedIntervalMs = 50; // Default
+    let estimatedDuration = 3000; // Default en ms
     
-    // Reproducir audio de voz cuando comienza el texto
-    playVoice('/music/defeatText.mp3');
-    
-    const interval = setInterval(() => {
+    // Iniciar animación inmediatamente para evitar parpadeos
+    interval = setInterval(() => {
       if (currentIndex < defeatText.length) {
         setDisplayText(defeatText.slice(0, currentIndex + 1));
         currentIndex++;
       } else {
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
+        interval = null;
         setIsTextComplete(true);
-        // Esperar 3 segundos después de que termine el texto, luego fade a negro y redirigir
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           setIsFadingOut(true);
           setTimeout(() => {
             disconnect();
-            restartMusic(); // Reiniciar la música antes de navegar
+            restartMusic();
             navigate('/');
-          }, 2000); // Tiempo para el fade a negro
-        }, 3000);
+          }, 2000);
+        }, estimatedDuration + 500);
       }
-    }, 50);
+    }, calculatedIntervalMs);
+    
+    // Ajustar velocidad cuando el audio cargue
+    playVoice('/music/defeatText.mp3').then((duration) => {
+      if (duration > 0 && currentIndex < defeatText.length) {
+        estimatedDuration = duration * 1000;
+        const charsPerSecond = defeatText.length / duration;
+        const newIntervalMs = Math.max(30, Math.min(100, 1000 / charsPerSecond));
+        
+        if (Math.abs(newIntervalMs - calculatedIntervalMs) > 10 && interval) {
+          calculatedIntervalMs = newIntervalMs;
+          clearInterval(interval);
+          interval = setInterval(() => {
+            if (currentIndex < defeatText.length) {
+              setDisplayText(defeatText.slice(0, currentIndex + 1));
+              currentIndex++;
+            } else {
+              if (interval) clearInterval(interval);
+              interval = null;
+              setIsTextComplete(true);
+              timeoutId = setTimeout(() => {
+                setIsFadingOut(true);
+                setTimeout(() => {
+                  disconnect();
+                  restartMusic();
+                  navigate('/');
+                }, 2000);
+              }, estimatedDuration + 500);
+            }
+          }, calculatedIntervalMs);
+        }
+      }
+    }).catch(err => {
+      console.error('Error reproduciendo voz:', err);
+      // Continuar con velocidad default
+    });
 
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [navigate, disconnect, restartMusic, playVoice]);
 
 

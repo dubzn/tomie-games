@@ -19,8 +19,8 @@ export default function GameScreen() {
   const { newGame, loading: actionLoading, error: actionError } = useActions();
   const { playVoice } = useAudio();
   
-  const idleText = "Tomie:\n Since you've accepted my invitation... how about a little game?";
-  const waitingText = "Tomie:\n What's taking so long? You're not thinking of running away... are you?";
+  const idleText = "Tomie: Since you've accepted my invitation... how about a little game?";
+  const waitingText = "Tomie: What's taking so long? You're not thinking of running away... are you?";
   
   useEffect(() => {
     setIsLoaded(true);
@@ -84,20 +84,48 @@ export default function GameScreen() {
     const currentText = isWaiting ? waitingText : idleText;
     const audioPath = isWaiting ? '/music/waitingText.mp3' : '/music/idleText.mp3';
     let currentIndex = 0;
+    let interval: NodeJS.Timeout | null = null;
+    let calculatedIntervalMs = 50; // Default
     
-    // Reproducir audio de voz cuando comienza el texto
-    playVoice(audioPath);
-    
-    const interval = setInterval(() => {
+    // Iniciar animación inmediatamente para evitar parpadeos
+    interval = setInterval(() => {
       if (currentIndex < currentText.length) {
         setDisplayText(currentText.slice(0, currentIndex + 1));
         currentIndex++;
       } else {
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
+        interval = null;
       }
-    }, 50);
+    }, calculatedIntervalMs);
+    
+    // Ajustar velocidad cuando el audio cargue
+    playVoice(audioPath).then((duration) => {
+      if (duration > 0 && currentIndex < currentText.length) {
+        const charsPerSecond = currentText.length / duration;
+        const newIntervalMs = Math.max(30, Math.min(100, 1000 / charsPerSecond));
+        
+        if (Math.abs(newIntervalMs - calculatedIntervalMs) > 10 && interval) {
+          calculatedIntervalMs = newIntervalMs;
+          clearInterval(interval);
+          interval = setInterval(() => {
+            if (currentIndex < currentText.length) {
+              setDisplayText(currentText.slice(0, currentIndex + 1));
+              currentIndex++;
+            } else {
+              if (interval) clearInterval(interval);
+              interval = null;
+            }
+          }, calculatedIntervalMs);
+        }
+      }
+    }).catch(err => {
+      console.error('Error reproduciendo voz:', err);
+      // Continuar con velocidad default
+    });
 
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isWaiting, playVoice]);
 
   const bgX = mousePosition.x * 15;

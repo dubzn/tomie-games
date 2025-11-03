@@ -10,7 +10,8 @@ interface AudioContextType {
   toggleSound: () => void;
   playEffect: () => void;
   restartMusic: () => void;
-  playVoice: (audioPath: string) => void;
+  playVoice: (audioPath: string) => Promise<number>; // Retorna la duración del audio en segundos
+  stopVoice: () => void; // Detiene el audio de voz actual
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -31,6 +32,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const effectSoundRef = useRef<HTMLAudioElement | null>(null);
+  const currentVoiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const location = useLocation();
   const previousPathRef = useRef<string>('');
   const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -237,14 +239,108 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const playVoice = (audioPath: string) => {
-    if (isSoundEnabled && audioPath) {
-      const voiceAudio = new Audio(audioPath);
-      voiceAudio.volume = 0.4;
-      voiceAudio.play().catch(err => {
-        console.log('Error reproduciendo voz:', err);
-      });
+  const stopVoice = () => {
+    if (currentVoiceAudioRef.current) {
+      try {
+        currentVoiceAudioRef.current.pause();
+        currentVoiceAudioRef.current.currentTime = 0;
+      } catch (err) {
+        console.log('Error deteniendo voz:', err);
+      }
+      currentVoiceAudioRef.current = null;
     }
+  };
+
+  const playVoice = async (audioPath: string): Promise<number> => {
+    // Detener cualquier audio anterior ANTES de crear el nuevo
+    stopVoice();
+    
+    return new Promise((resolve, reject) => {
+      if (isSoundEnabled && audioPath) {
+        // Verificación adicional: si por alguna razón aún hay un audio, detenerlo
+        if (currentVoiceAudioRef.current) {
+          stopVoice();
+        }
+        
+        const voiceAudio = new Audio(audioPath);
+        voiceAudio.volume = 0.25;
+        currentVoiceAudioRef.current = voiceAudio;
+        let resolved = false;
+        
+        const handleResolve = (duration: number) => {
+          // Verificar que este audio sigue siendo el actual antes de reproducir
+          if (!resolved && currentVoiceAudioRef.current === voiceAudio) {
+            resolved = true;
+            voiceAudio.play().catch(err => {
+              console.log('Error reproduciendo voz:', err);
+              if (currentVoiceAudioRef.current === voiceAudio) {
+                currentVoiceAudioRef.current = null;
+              }
+              reject(err);
+            });
+            resolve(duration);
+          } else if (!resolved) {
+            // Si otro audio ya empezó, cancelar este
+            resolved = true;
+            voiceAudio.pause();
+            reject(new Error('Audio cancelado: se inició otro audio'));
+          }
+        };
+        
+        // Limpiar referencia cuando termine el audio
+        voiceAudio.addEventListener('ended', () => {
+          if (currentVoiceAudioRef.current === voiceAudio) {
+            currentVoiceAudioRef.current = null;
+          }
+        }, { once: true });
+        
+        // Obtener la duración del audio cuando los metadatos estén cargados
+        voiceAudio.addEventListener('loadedmetadata', () => {
+          // Verificar que este sigue siendo el audio actual
+          if (currentVoiceAudioRef.current === voiceAudio) {
+            const duration = voiceAudio.duration;
+            handleResolve(duration);
+          }
+        }, { once: true });
+        
+        voiceAudio.addEventListener('error', (err) => {
+          console.log('Error cargando audio:', err);
+          if (currentVoiceAudioRef.current === voiceAudio) {
+            currentVoiceAudioRef.current = null;
+          }
+          if (!resolved) {
+            resolved = true;
+            reject(err);
+          }
+        }, { once: true });
+        
+        // Si ya tiene duración disponible (audio ya cargado)
+        if (voiceAudio.readyState >= 2 && voiceAudio.duration) {
+          // Verificar que sigue siendo el audio actual antes de resolver
+          if (currentVoiceAudioRef.current === voiceAudio) {
+            handleResolve(voiceAudio.duration);
+          } else {
+            resolved = true;
+            reject(new Error('Audio cancelado: se inició otro audio'));
+          }
+        }
+        
+        // Fallback: si después de un tiempo no se cargó, usar 0
+        setTimeout(() => {
+          if (!resolved && voiceAudio.readyState >= 2) {
+            // Verificar que sigue siendo el audio actual
+            if (currentVoiceAudioRef.current === voiceAudio) {
+              handleResolve(voiceAudio.duration || 3); // Default 3 segundos si no hay duración
+            } else {
+              resolved = true;
+              reject(new Error('Audio cancelado: se inició otro audio'));
+            }
+          }
+        }, 100);
+      } else {
+        resolve(0);
+      }
+    });
   };
 
   return (
@@ -255,7 +351,8 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       toggleSound,
       playEffect,
       restartMusic,
-      playVoice
+      playVoice,
+      stopVoice
     }}>
       {children}
     </AudioContext.Provider>

@@ -19,8 +19,8 @@ export default function VictoryScreen() {
   const [isNarrationComplete, setIsNarrationComplete] = useState(false);
   const victoryRef = useRef<HTMLDivElement>(null);
   
-  const victoryText = "Tomie:\n What a shame. I would've liked to play with you a little longer.";
-  const narrationText = "Without looking back, you walk away. Maybe it was luck... but you survived."
+  const victoryText = "Tomie: What a shame. I would've liked to play with you a little longer.";
+  const narrationText = "Without looking back, you run away. Maybe it was luck... but you survived."
 
   useEffect(() => {
     setIsLoaded(true);
@@ -53,25 +53,60 @@ export default function VictoryScreen() {
     setDisplayText('');
     setIsTextComplete(false);
     let currentIndex = 0;
+    let interval: NodeJS.Timeout | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    let calculatedIntervalMs = 50; // Default
+    let estimatedDuration = 3000; // Default en ms
     
-    // Reproducir audio de voz cuando comienza el texto
-    playVoice('/music/victoryText.mp3');
-    
-    const interval = setInterval(() => {
+    // Iniciar animación inmediatamente para evitar parpadeos
+    interval = setInterval(() => {
       if (currentIndex < victoryText.length) {
         setDisplayText(victoryText.slice(0, currentIndex + 1));
         currentIndex++;
       } else {
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
+        interval = null;
         setIsTextComplete(true);
-        // Esperar 3 segundos después de que termine el texto, luego mostrar transición de casa
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           setShowHouseTransition(true);
-        }, 3000);
+        }, estimatedDuration + 500);
       }
-    }, 50);
+    }, calculatedIntervalMs);
+    
+    // Ajustar velocidad cuando el audio cargue
+    playVoice('/music/victoryText.mp3').then((duration) => {
+      if (duration > 0 && currentIndex < victoryText.length) {
+        estimatedDuration = duration * 1000;
+        const charsPerSecond = victoryText.length / duration;
+        const newIntervalMs = Math.max(30, Math.min(100, 1000 / charsPerSecond));
+        
+        if (Math.abs(newIntervalMs - calculatedIntervalMs) > 10 && interval) {
+          calculatedIntervalMs = newIntervalMs;
+          clearInterval(interval);
+          interval = setInterval(() => {
+            if (currentIndex < victoryText.length) {
+              setDisplayText(victoryText.slice(0, currentIndex + 1));
+              currentIndex++;
+            } else {
+              if (interval) clearInterval(interval);
+              interval = null;
+              setIsTextComplete(true);
+              timeoutId = setTimeout(() => {
+                setShowHouseTransition(true);
+              }, estimatedDuration + 500);
+            }
+          }, calculatedIntervalMs);
+        }
+      }
+    }).catch(err => {
+      console.error('Error reproduciendo voz:', err);
+      // Continuar con velocidad default
+    });
 
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [navigate, disconnect, restartMusic, victoryText, playVoice]);
 
   // Efecto para la transición de narración con la casa
